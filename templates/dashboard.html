@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>ようこそ、{{ session.username }}さん！</h2>
+    <p>以下の機能を使って、就職活動を効率的に管理しましょう。</p>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <h3>応募企業情報</h3>
+            <p>応募した企業の情報を記録・確認できます。</p>
+            <a href="{{ url_for('companies') }}">詳細を見る</a>
+        </div>
+        <div class="card">
+            <h3>面接スケジュール</h3>
+            <p>面接の日時や場所を管理できます。</p>
+            <a href="{{ url_for('interviews') }}">詳細を見る</a> {# ★ここを修正しました★ #}
+        </div>
+        <div class="card">
+            <h3>タスク管理</h3>
+            <p>就活に関するタスクの進捗を管理できます。</p>
+            <a href="{{ url_for('tasks') }}">詳細を見る</a> {# ★ここを修正しました★ #}
+        </div>
+        <div class="card">
+            <h3>応募書類管理</h3>
+            <p>応募書類のバージョンや提出状況を管理できます。</p>
+            <a href="{{ url_for('documents') }}">詳細を見る</a> {# ★ここを修正しました★ #}
+        </div>
+        <div class="card">
+            <h3>メモ</h3>
+            <p>企業や面接に関するメモを自由に記録できます。</p>
+            <a href="{{ url_for('memos') }}">詳細を見る</a> {# ★ここを修正しました★ #}
+        </div>
+    </div>
+{% endblock %}

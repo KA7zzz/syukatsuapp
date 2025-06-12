@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}就活管理アプリ{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <h1>就活管理アプリ</h1>
+        <nav>
+            {% if session.username %}
+            <a href="{{ url_for('dashboard') }}">ダッシュボード</a>
+            <a href="{{ url_for('logout') }}">ログアウト ({{ session.username }})</a>
+            {% else %}
+            <a href="{{ url_for('login') }}">ログイン</a>
+            {% endif %}
+        </nav>
+    </div>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

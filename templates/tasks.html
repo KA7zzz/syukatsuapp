@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}タスク管理 - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>タスク管理</h2>
+
+    <h3>新規タスク追加</h3>
+    <form action="{{ url_for('add_task') }}" method="post">
+        <label for="task_content">タスク内容:</label>
+        <input type="text" id="task_content" name="content" required><br><br>
+
+        <label for="task_deadline">期限 (例: 2025/06/20):</label>
+        <input type="text" id="task_deadline" name="deadline"><br><br>
+
+        <input type="submit" value="タスクを追加">
+    </form>
+
+    <hr>
+
+    <h3>登録済みタスク一覧</h3>
+    {% if tasks %}
+        <table border="1" style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>タスク内容</th>
+                    <th>期限</th>
+                    <th>状態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task_data in tasks %}
+                <tr>
+                    <td>{{ task_data.content }}</td>
+                    <td>{{ task_data.deadline }}</td>
+                    <td>{{ task_data.status }}</td>
+                    <td>
+                        {% if task_data.status == '未完了' %}
+                            <form action="{{ url_for('complete_task') }}" method="post" style="display:inline;">
+                                <input type="hidden" name="task_index" value="{{ loop.index0 }}">
+                                <input type="submit" value="完了" style="padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            </form>
+                        {% else %}
+                            <span>-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>まだタスクが登録されていません。</p>
+    {% endif %}
+
+    <p><a href="{{ url_for('dashboard') }}">ダッシュボードに戻る</a></p>
+{% endblock %}

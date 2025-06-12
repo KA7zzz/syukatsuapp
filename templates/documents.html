@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}応募書類管理 - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>応募書類管理</h2>
+
+    <h3>新規応募書類情報追加</h3>
+    <form action="{{ url_for('add_document') }}" method="post">
+        <label for="doc_name">書類名:</label>
+        <input type="text" id="doc_name" name="document_name" required><br><br>
+
+        <label for="doc_company">企業名:</label>
+        <input type="text" id="doc_company" name="company_name"><br><br>
+
+        <label for="submission_date">提出日 (例: 2025/06/10):</label>
+        <input type="text" id="submission_date" name="submission_date"><br><br>
+
+        <label for="doc_status">状況:</label>
+        <input type="text" id="doc_status" name="status"><br><br>
+
+        <input type="submit" value="書類情報を追加">
+    </form>
+
+    <hr>
+
+    <h3>登録済み応募書類一覧</h3>
+    {% if documents %}
+        <table border="1" style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>書類名</th>
+                    <th>企業名</th>
+                    <th>提出日</th>
+                    <th>状況</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc_data in documents %}
+                <tr>
+                    <td>{{ doc_data.document_name }}</td>
+                    <td>{{ doc_data.company_name }}</td>
+                    <td>{{ doc_data.submission_date }}</td>
+                    <td>{{ doc_data.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>まだ応募書類情報が登録されていません。</p>
+    {% endif %}
+
+    <p><a href="{{ url_for('dashboard') }}">ダッシュボードに戻る</a></p>
+{% endblock %}

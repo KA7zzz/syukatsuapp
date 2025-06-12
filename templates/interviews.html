@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}面接スケジュール - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>面接スケジュール</h2>
+
+    <h3>新規面接情報追加</h3>
+    <form action="{{ url_for('add_interview') }}" method="post">
+        <label for="int_company_name">企業名:</label>
+        <input type="text" id="int_company_name" name="company_name" required><br><br>
+
+        <label for="interview_date_time">日時 (例: 2025/06/15 14:00):</label>
+        <input type="text" id="interview_date_time" name="date_time"><br><br>
+
+        <label for="interview_location">場所:</label>
+        <input type="text" id="interview_location" name="location"><br><br>
+
+        <label for="interview_person">担当者:</label>
+        <input type="text" id="interview_person" name="person"><br><br>
+
+        <input type="submit" value="面接情報を追加">
+    </form>
+
+    <hr>
+
+    <h3>登録済み面接一覧</h3>
+    {% if interviews %}
+        <table border="1" style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>企業名</th>
+                    <th>日時</th>
+                    <th>場所</th>
+                    <th>担当者</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for interview_data in interviews %}
+                <tr>
+                    <td>{{ interview_data.company_name }}</td>
+                    <td>{{ interview_data.date_time }}</td>
+                    <td>{{ interview_data.location }}</td>
+                    <td>{{ interview_data.person }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>まだ面接情報が登録されていません。</p>
+    {% endif %}
+
+    <p><a href="{{ url_for('dashboard') }}">ダッシュボードに戻る</a></p>
+{% endblock %}
