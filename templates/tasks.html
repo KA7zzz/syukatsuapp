@@ -13,6 +13,14 @@
         <label for="task_deadline">期限 (例: 2025/06/20):</label>
         <input type="text" id="task_deadline" name="deadline"><br><br>
 
+        <label for="task_company_id">関連企業 (任意):</label> {# ★企業選択追加★ #}
+        <select id="task_company_id" name="company_id">
+            <option value="">選択しない</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}">{{ company.name }}</option>
+            {% endfor %}
+        </select><br><br>
+
         <input type="submit" value="タスクを追加">
     </form>
 
@@ -26,23 +34,25 @@
                     <th>タスク内容</th>
                     <th>期限</th>
                     <th>状態</th>
+                    <th>関連企業</th> {# ★関連企業列追加★ #}
                     <th>操作</th>
                 </tr>
             </thead>
             <tbody>
-                {% for task_data in tasks %}
+                {% for task, company_name in tasks %} {# ★変数名を変更：タプルで受け取る ★ #}
                 <tr>
-                    <td>{{ task_data.content }}</td>
-                    <td>{{ task_data.deadline }}</td>
-                    <td>{{ task_data.status }}</td>
+                    <td>{{ task.content }}</td>
+                    <td>{{ task.deadline }}</td>
+                    <td>{{ task.status }}</td>
+                    <td>{{ company_name if company_name else 'なし' }}</td> {# ★関連企業表示★ #}
                     <td>
-                        {% if task_data.status == '未完了' %}
+                        {% if task.status == '未完了' %}
                             <form action="{{ url_for('complete_task') }}" method="post" style="display:inline;">
-                                <input type="hidden" name="task_index" value="{{ loop.index0 }}">
+                                <input type="hidden" name="task_id" value="{{ task.id }}"> {# ★task.id を渡す★ #}
                                 <input type="submit" value="完了" style="padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
                             </form>
                         {% else %}
-                            <span>-</span>
+                            <span>完了済み</span> {# 完了済みと表示 #}
                         {% endif %}
                     </td>
                 </tr>

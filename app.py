@@ -2,114 +2,128 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+from datetime import datetime # 日付を扱うために追加
 
 # --- Flaskアプリケーションの基本設定 ---
 app = Flask(__name__)
-# セッションを暗号化するための秘密鍵
-# 環境変数から読み込むように変更。デプロイ時はRenderの環境変数に設定したFLASK_SECRET_KEYが使われます。
-# ローカル開発用にデフォルト値を設定
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'super_secret_dev_key')
 
 # --- データベース設定 (SQLite) ---
-# SQLiteデータベースファイルのパス。dataフォルダ内に配置します。
-# Renderでは永続ディスクのパスと合わせる必要があります。
-# '/opt/render/project/src/data' はRenderのWebサービスで設定した永続ディスクのマウントパスです。
-# ローカル環境では 'data/site.db' になります。
 base_dir = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(base_dir, 'data', 'site.db')
-render_db_folder_path = os.path.join('/opt', 'render', 'project', 'src', 'data') # Renderの永続ディスクパス
-render_db_file_path = os.path.join(render_db_folder_path, 'site.db') # RenderでのDBファイル絶対パス
+render_db_folder_path = os.path.join('/opt', 'render', 'project', 'src', 'data')
+render_db_file_path = os.path.join(render_db_folder_path, 'site.db')
 
-# Render環境で実行されているかどうかの判定 (RENDER_EXTERNAL_HOSTNAME はRenderで自動設定される環境変数)
 if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{render_db_file_path}'
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # 警告を抑制
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
 # --- データベースモデルの定義 ---
 
-# Userモデル (ユーザー情報を保存するテーブル)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    # user_id と関連付けるフィールド (後で他のモデルに追加します)
-    # 例えば、companies = db.relationship('Company', backref='owner', lazy=True)
+    # このユーザーが登録した企業情報を参照できるようにリレーションを追加
+    companies = db.relationship('Company', backref='user', lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<User {self.username}>'
 
-    # パスワードを設定するメソッド (ハッシュ化して保存)
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
-    # パスワードを検証するメソッド
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-# --- 既存のテキストファイル操作関数 (後でデータベース操作に置き換えられます) ---
-# ※これらは後で削除しますので、一時的に存在しているだけです。
-DATA_DIR = "data"
-COMPANIES_FILE = os.path.join(DATA_DIR, "companies.txt")
-INTERVIEWS_FILE = os.path.join(DATA_DIR, "interviews.txt")
-TASKS_FILE = os.path.join(DATA_DIR, "tasks.txt")
-DOCUMENTS_FILE = os.path.join(DATA_DIR, "documents.txt")
-MEMOS_FILE = os.path.join(DATA_DIR, "memos.txt")
+# ★ここからCompanyモデルを追加★
+class Company(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    application_date = db.Column(db.String(20)) # 日付形式で保存する文字列
+    selection_stage = db.Column(db.String(50))
+    result = db.Column(db.String(50))
+    # どのユーザーがこの企業情報を登録したかを識別するための外部キー
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# ローカル環境でdataディレクトリが存在しない場合は作成
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
+    def __repr__(self):
+        return f'<Company {self.name}>'
+# ... (User, Company モデルの定義の続き) ...
 
-# Render環境でのdataディレクトリ作成確認 (永続ディスクがマウントされるパス)
-if os.environ.get('RENDER_EXTERNAL_HOSTNAME') and not os.path.exists(render_db_folder_path):
-    os.makedirs(render_db_folder_path)
+# Interviewモデル (面接情報を保存するテーブル)
+class Interview(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False) # 企業と紐付け
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # ユーザーと紐付け
+    date_time = db.Column(db.String(50)) # 日時 (例: 2025/06/15 14:00)
+    location = db.Column(db.String(100))
+    person = db.Column(db.String(100))
+    url = db.Column(db.String(200)) # ★イベント詳細URL追加★
+    notes = db.Column(db.Text) # ★メモ追加★
 
+    # CompanyモデルとInterviewモデルのリレーション
+    company = db.relationship('Company', backref=db.backref('interviews', lazy=True, cascade="all, delete-orphan"))
 
-def save_data(filepath, data_list):
-    try:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            for item in data_list:
-                f.write(item + '\n')
-        # print(f"データが {filepath} に保存されました。") # デバッグ用
-    except IOError as e:
-        print(f"エラー: データファイル {filepath} への書き込みに失敗しました。{e}")
+    def __repr__(self):
+        return f'<Interview {self.company.name} - {self.date_time}>'
 
-def load_data(filepath):
-    data_list = []
-    try:
-        if os.path.exists(filepath):
-            with open(filepath, 'r', encoding='utf-8') as f:
-                for line in f:
-                    data_list.append(line.strip())
-        return data_list
-    except IOError as e:
-        print(f"エラー: データファイル {filepath} の読み込みに失敗しました。{e}")
-        return []
+# Taskモデル (タスク情報を保存するテーブル)
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # ユーザーと紐付け
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True) # 特定の企業に関連するタスクの場合
+    content = db.Column(db.Text, nullable=False)
+    deadline = db.Column(db.String(20)) # 期限
+    status = db.Column(db.String(20), default='未完了') # 未完了, 完了
 
-def parse_data_string(data_string, keys):
-    parsed_data = {}
-    parts = data_string.split(', ')
-    for part in parts:
-        if ': ' in part:
-            key, value = part.split(': ', 1)
-            parsed_data[key] = value.strip()
-    for key in keys:
-        if key not in parsed_data:
-            parsed_data[key] = '不明'
-    return parsed_data
+    # CompanyモデルとTaskモデルのリレーション (Company IDは任意)
+    company = db.relationship('Company', backref=db.backref('tasks', lazy=True, cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return f'<Task {self.content}>'
+
+# Documentモデル (応募書類情報を保存するテーブル)
+class Document(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # ユーザーと紐付け
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True) # 特定の企業に関連する書類の場合
+    document_name = db.Column(db.String(100), nullable=False)
+    submission_date = db.Column(db.String(20))
+    status = db.Column(db.String(50))
+    file_path = db.Column(db.String(200)) # ★ファイルパスやURL追加 (実際にはS3などのストレージへのリンク) ★
+
+    # CompanyモデルとDocumentモデルのリレーション (Company IDは任意)
+    company = db.relationship('Company', backref=db.backref('documents', lazy=True, cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return f'<Document {self.document_name} for {self.company_id}>'
+
+# Memoモデル (メモ情報を保存するテーブル)
+class Memo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # ユーザーと紐付け
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True) # 特定の企業に関連するメモの場合
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False) # ★内容の文字数制限なし★
+
+    # CompanyモデルとMemoモデルのリレーション (Company IDは任意)
+    company = db.relationship('Company', backref=db.backref('memos', lazy=True, cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return f'<Memo {self.title}>'
+# --- 既存のテキストファイル操作関数 (データベース移行が完了したら削除します) ---
+
 
 # --- アプリケーションルート ---
 
-# アプリケーション起動時にデータベースを作成 (初回のみ)
 @app.before_request
 def create_tables():
     # データベースファイルが存在しない場合のみ作成
-    # Render環境かローカル環境かでパスを適切に判断
     if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
         db_file_exists = os.path.exists(render_db_file_path)
     else:
@@ -119,16 +133,6 @@ def create_tables():
         with app.app_context():
             db.create_all()
             print("データベーステーブルが作成されました。")
-            # デバッグ用に最初のユーザーをここで作成することも可能ですが、
-            # ユーザー登録機能ができたのでコメントアウト推奨
-            # admin_user = User.query.filter_by(username='admin').first()
-            # if not admin_user:
-            #     admin = User(username='admin')
-            #     admin.set_password('adminpass')
-            #     db.session.add(admin)
-            #     db.session.commit()
-            #     print("初期ユーザー 'admin' が作成されました。")
-
 
 @app.route('/')
 def index():
@@ -136,37 +140,37 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-# ログインルート (データベース認証)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'username' in session: # 既にログインしている場合はダッシュボードへ
+    if 'username' in session:
         return redirect(url_for('dashboard'))
 
-    error = None # エラーメッセージ用 (flashメッセージと併用)
+    error = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
-        user = User.query.filter_by(username=username).first() # データベースからユーザーを取得
-        if user and user.check_password(password): # パスワードを検証
-            session['username'] = user.username # ログイン成功したらセッションにユーザー名を保存
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            session['username'] = user.username
+            session['user_id'] = user.id # ★ユーザーIDをセッションに保存★
             flash('ログインに成功しました！', 'success')
             return redirect(url_for('dashboard'))
         else:
             error = '無効なユーザー名またはパスワードです。'
-            flash(error, 'danger') # flashメッセージとしても表示
+            flash(error, 'danger')
     return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
     session.pop('username', None)
+    session.pop('user_id', None) # ★ユーザーIDもセッションから削除★
     flash('ログアウトしました。', 'info')
     return redirect(url_for('login'))
 
-# 新規ユーザー登録ルート
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if 'username' in session: # 既にログインしている場合はダッシュボードへ
+    if 'username' in session:
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
@@ -176,7 +180,7 @@ def register():
 
         if password != confirm_password:
             flash('パスワードが一致しません。', 'danger')
-            return render_template('register.html', username=username) # 入力値を保持するためにusernameを渡す
+            return render_template('register.html', username=username)
 
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
@@ -184,9 +188,9 @@ def register():
             return render_template('register.html', username=username)
 
         new_user = User(username=username)
-        new_user.set_password(password) # パスワードをハッシュ化して設定
+        new_user.set_password(password)
         db.session.add(new_user)
-        db.session.commit() # データベースに保存
+        db.session.commit()
 
         flash('ユーザー登録が完了しました！ログインしてください。', 'success')
         return redirect(url_for('login'))
@@ -200,129 +204,177 @@ def dashboard():
         return redirect(url_for('login'))
     return render_template('dashboard.html', username=session['username'])
 
-# --- 既存の企業情報関連のルート (後でDB化します) ---
+# --- 応募企業情報 (データベース化) ---
 @app.route('/companies')
 def companies():
     if 'username' not in session:
         return redirect(url_for('login'))
-
-    raw_companies = load_data(COMPANIES_FILE)
-    parsed_companies = []
-    expected_keys = ["企業名", "応募日", "選考段階", "結果"]
-    for company_str in raw_companies:
-        company_data = parse_data_string(company_str, expected_keys)
-        parsed_companies.append({
-            'name': company_data.get('企業名', '不明'),
-            'application_date': company_data.get('応募日', '不明'),
-            'selection_stage': company_data.get('選考段階', '不明'),
-            'result': company_data.get('結果', '未定')
-        })
-    return render_template('companies.html', companies=parsed_companies)
+    
+    # ★ここからデータベースから取得するロジックに変更★
+    user_id = session.get('user_id')
+    # ログイン中のユーザーが登録した企業情報のみを取得
+    companies = Company.query.filter_by(user_id=user_id).order_by(Company.name).all()
+    
+    return render_template('companies.html', companies=companies)
 
 @app.route('/add_company', methods=['POST'])
 def add_company():
     if 'username' not in session:
         return redirect(url_for('login'))
+    
+    # ★ここからデータベースに保存するロジックに変更★
+    user_id = session.get('user_id')
+    if user_id is None: # ユーザーIDがセッションにない場合はエラーまたはリダイレクト
+        flash('セッションエラー：ユーザーIDが見つかりません。再ログインしてください。', 'danger')
+        return redirect(url_for('login'))
 
     if request.method == 'POST':
         company_name = request.form['company_name']
-        application_date = request.form.get('application_date', '未入力')
-        selection_stage = request.form.get('selection_stage', '未入力')
-        result = request.form.get('result', '未定')
+        application_date = request.form.get('application_date', '') # 空文字列で保存
+        selection_stage = request.form.get('selection_stage', '')
+        result = request.form.get('result', '')
 
-        new_company_entry = (
-            f"企業名: {company_name}, "
-            f"応募日: {application_date}, "
-            f"選考段階: {selection_stage}, "
-            f"結果: {result}"
+        # 新しいCompanyオブジェクトを作成
+        new_company = Company(
+            name=company_name,
+            application_date=application_date,
+            selection_stage=selection_stage,
+            result=result,
+            user_id=user_id # ログインユーザーのIDを割り当てる
         )
+        db.session.add(new_company) # データベースに追加
+        db.session.commit() # 変更をコミットして保存
 
-        companies_list = load_data(COMPANIES_FILE)
-        companies_list.append(new_company_entry)
-        save_data(COMPANIES_FILE, companies_list)
+        flash(f'企業「{company_name}」を追加しました。', 'success')
 
     return redirect(url_for('companies'))
 
-# --- 面接スケジュール (後でDB化します) ---
+# app.py のルート定義セクションに追加
+# 例: /companies ルートの後あたり
+
+# --- 企業詳細ページ ---
+@app.route('/company/<int:company_id>')
+def company_detail(company_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+
+    # ログイン中のユーザーが所有する企業情報を取得
+    company = Company.query.filter_by(id=company_id, user_id=user_id).first_or_404()
+    
+    # その企業に関連する面接、タスク、書類、メモを取得
+    interviews = Interview.query.filter_by(company_id=company_id, user_id=user_id).order_by(Interview.date_time).all()
+    tasks = Task.query.filter_by(company_id=company_id, user_id=user_id).order_by(Task.deadline).all()
+    documents = Document.query.filter_by(company_id=company_id, user_id=user_id).order_by(Document.document_name).all()
+    memos = Memo.query.filter_by(company_id=company_id, user_id=user_id).order_by(Memo.title).all()
+
+    return render_template(
+        'company_detail.html',
+        company=company,
+        interviews=interviews,
+        tasks=tasks,
+        documents=documents,
+        memos=memos
+    )
+
+# --- 面接スケジュール (DB化) ---
+# --- 面接スケジュール (データベース化) ---
 @app.route('/interviews')
 def interviews():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    raw_interviews = load_data(INTERVIEWS_FILE)
-    parsed_interviews = []
-    expected_keys = ["企業名", "日時", "場所", "担当者"]
-    for interview_str in raw_interviews:
-        interview_data = parse_data_string(interview_str, expected_keys)
-        parsed_interviews.append({
-            'company_name': interview_data.get('企業名', '不明'),
-            'date_time': interview_data.get('日時', '不明'),
-            'location': interview_data.get('場所', '不明'),
-            'person': interview_data.get('担当者', '不明')
-        })
-    return render_template('interviews.html', interviews=parsed_interviews)
+    user_id = session.get('user_id')
+    # ログインユーザーの面接情報と、関連する企業名も一緒に取得
+    interviews = Interview.query.filter_by(user_id=user_id).join(Company).order_by(Interview.date_time).all()
+    
+    # 面接登録フォームで企業選択を可能にするため、ユーザーが登録した企業リストも渡す
+    companies = Company.query.filter_by(user_id=user_id).order_by(Company.name).all()
+
+    return render_template('interviews.html', interviews=interviews, companies=companies)
 
 @app.route('/add_interview', methods=['POST'])
 def add_interview():
     if 'username' not in session:
         return redirect(url_for('login'))
 
+    user_id = session.get('user_id')
+    if user_id is None:
+        flash('セッションエラー：ユーザーIDが見つかりません。再ログインしてください。', 'danger')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
-        company_name = request.form['company_name']
-        date_time = request.form.get('date_time', '未入力')
-        location = request.form.get('location', '未入力')
-        person = request.form.get('person', '未入力')
+        company_id = request.form['company_id'] # selectボックスから取得
+        date_time = request.form.get('date_time', '')
+        location = request.form.get('location', '')
+        person = request.form.get('person', '')
+        url = request.form.get('url', '') # ★URL追加★
+        notes = request.form.get('notes', '') # ★メモ追加★
 
-        new_interview_entry = (
-            f"企業名: {company_name}, "
-            f"日時: {date_time}, "
-            f"場所: {location}, "
-            f"担当者: {person}"
+        new_interview = Interview(
+            company_id=company_id,
+            user_id=user_id,
+            date_time=date_time,
+            location=location,
+            person=person,
+            url=url, # ★URL設定★
+            notes=notes # ★メモ設定★
         )
+        db.session.add(new_interview)
+        db.session.commit()
 
-        interviews_list = load_data(INTERVIEWS_FILE)
-        interviews_list.append(new_interview_entry)
-        save_data(INTERVIEWS_FILE, interviews_list)
+        flash(f'面接情報を追加しました。', 'success')
 
     return redirect(url_for('interviews'))
 
 # --- タスク管理 (後でDB化します) ---
+# --- タスク管理 (データベース化) ---
 @app.route('/tasks')
 def tasks():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    raw_tasks = load_data(TASKS_FILE)
-    parsed_tasks = []
-    expected_keys = ["タスク内容", "期限", "状態"]
-    for task_str in raw_tasks:
-        task_data = parse_data_string(task_str, expected_keys)
-        parsed_tasks.append({
-            'content': task_data.get('タスク内容', '不明'),
-            'deadline': task_data.get('期限', '不明'),
-            'status': task_data.get('状態', '未完了')
-        })
-    return render_template('tasks.html', tasks=parsed_tasks)
+    user_id = session.get('user_id')
+    # ログインユーザーのタスクと、関連する企業名も一緒に取得
+    # Companyを左結合することで、company_idがNULLでもタスクは表示される
+    tasks = db.session.query(Task, Company.name).outerjoin(Company).filter(Task.user_id==user_id).order_by(Task.deadline).all()
+
+    # タスク登録フォームで企業選択を可能にするため、ユーザーが登録した企業リストも渡す
+    companies = Company.query.filter_by(user_id=user_id).order_by(Company.name).all()
+
+    return render_template('tasks.html', tasks=tasks, companies=companies)
 
 @app.route('/add_task', methods=['POST'])
 def add_task():
     if 'username' not in session:
         return redirect(url_for('login'))
 
+    user_id = session.get('user_id')
+    if user_id is None:
+        flash('セッションエラー：ユーザーIDが見つかりません。再ログインしてください。', 'danger')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         content = request.form['content']
-        deadline = request.form.get('deadline', '未入力')
-        status = '未完了'
+        deadline = request.form.get('deadline', '')
+        company_id = request.form.get('company_id') # 企業IDは任意
+        
+        # company_id が空文字の場合、None に変換してデータベースにNULLとして保存
+        company_id_val = int(company_id) if company_id else None
 
-        new_task_entry = (
-            f"タスク内容: {content}, "
-            f"期限: {deadline}, "
-            f"状態: {status}"
+
+        new_task = Task(
+            user_id=user_id,
+            company_id=company_id_val,
+            content=content,
+            deadline=deadline,
+            status='未完了'
         )
+        db.session.add(new_task)
+        db.session.commit()
 
-        tasks_list = load_data(TASKS_FILE)
-        tasks_list.append(new_task_entry)
-        save_data(TASKS_FILE, tasks_list)
+        flash(f'タスク「{content}」を追加しました。', 'success')
 
     return redirect(url_for('tasks'))
 
@@ -331,99 +383,124 @@ def complete_task():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    if request.method == 'POST':
-        task_index = int(request.form['task_index'])
+    user_id = session.get('user_id')
+    if user_id is None:
+        flash('セッションエラー：ユーザーIDが見つかりません。再ログインしてください。', 'danger')
+        return redirect(url_for('login'))
 
-        tasks_list = load_data(TASKS_FILE)
-        if 0 <= task_index < len(tasks_list):
-            task_str = tasks_list[task_index]
-            if "状態: 未完了" in task_str:
-                tasks_list[task_index] = task_str.replace("状態: 未完了", "状態: 完了")
-                save_data(TASKS_FILE, tasks_list)
+    if request.method == 'POST':
+        task_id = request.form['task_id'] # タスクIDで更新
+
+        # ログイン中のユーザーが所有するタスクのみを更新
+        task_to_update = Task.query.filter_by(id=task_id, user_id=user_id).first()
+        if task_to_update:
+            task_to_update.status = '完了'
+            db.session.commit()
+            flash(f'タスク「{task_to_update.content}」を完了しました。', 'success')
+        else:
+            flash('指定されたタスクが見つからないか、更新できませんでした。', 'danger')
 
     return redirect(url_for('tasks'))
 
 # --- 応募書類管理 (後でDB化します) ---
+# --- 応募書類管理 (データベース化) ---
 @app.route('/documents')
 def documents():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    raw_documents = load_data(DOCUMENTS_FILE)
-    parsed_documents = []
-    expected_keys = ["書類名", "企業名", "提出日", "状況"]
-    for doc_str in raw_documents:
-        doc_data = parse_data_string(doc_str, expected_keys)
-        parsed_documents.append({
-            'document_name': doc_data.get('書類名', '不明'),
-            'company_name': doc_data.get('企業名', '不明'),
-            'submission_date': doc_data.get('提出日', '不明'),
-            'status': doc_data.get('状況', '不明')
-        })
-    return render_template('documents.html', documents=parsed_documents)
+    user_id = session.get('user_id')
+    # ログインユーザーの書類情報と、関連する企業名も一緒に取得
+    documents = db.session.query(Document, Company.name).outerjoin(Company).filter(Document.user_id==user_id).order_by(Document.document_name).all()
+
+    # 書類登録フォームで企業選択を可能にするため、ユーザーが登録した企業リストも渡す
+    companies = Company.query.filter_by(user_id=user_id).order_by(Company.name).all()
+
+    return render_template('documents.html', documents=documents, companies=companies)
 
 @app.route('/add_document', methods=['POST'])
 def add_document():
     if 'username' not in session:
         return redirect(url_for('login'))
 
+    user_id = session.get('user_id')
+    if user_id is None:
+        flash('セッションエラー：ユーザーIDが見つかりません。再ログインしてください。', 'danger')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         document_name = request.form['document_name']
-        company_name = request.form.get('company_name', '未入力')
-        submission_date = request.form.get('submission_date', '未入力')
-        status = request.form.get('status', '未入力')
+        company_id = request.form.get('company_id') # 企業IDは任意
+        submission_date = request.form.get('submission_date', '')
+        status = request.form.get('status', '')
+        file_path = request.form.get('file_path', '') # ★ファイルパス/URL追加★
+        
+        # company_id が空文字の場合、None に変換してデータベースにNULLとして保存
+        company_id_val = int(company_id) if company_id else None
 
-        new_document_entry = (
-            f"書類名: {document_name}, "
-            f"企業名: {company_name}, "
-            f"提出日: {submission_date}, "
-            f"状況: {status}"
+        new_document = Document(
+            user_id=user_id,
+            company_id=company_id_val,
+            document_name=document_name,
+            submission_date=submission_date,
+            status=status,
+            file_path=file_path # ★ファイルパス/URL設定★
         )
+        db.session.add(new_document)
+        db.session.commit()
 
-        documents_list = load_data(DOCUMENTS_FILE)
-        documents_list.append(new_document_entry)
-        save_data(DOCUMENTS_FILE, documents_list)
+        flash(f'書類「{document_name}」を追加しました。', 'success')
 
     return redirect(url_for('documents'))
 
 # --- メモ (後でDB化します) ---
+# --- メモ (データベース化) ---
 @app.route('/memos')
 def memos():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    raw_memos = load_data(MEMOS_FILE)
-    parsed_memos = []
-    expected_keys = ["タイトル", "内容"]
-    for memo_str in raw_memos:
-        memo_data = parse_data_string(memo_str, expected_keys)
-        parsed_memos.append({
-            'title': memo_data.get('タイトル', '不明'),
-            'content': memo_data.get('内容', '不明')
-        })
-    return render_template('memos.html', memos=parsed_memos)
+    user_id = session.get('user_id')
+    # ログインユーザーのメモ情報と、関連する企業名も一緒に取得
+    memos = db.session.query(Memo, Company.name).outerjoin(Company).filter(Memo.user_id==user_id).order_by(Memo.title).all()
+
+    # メモ登録フォームで企業選択を可能にするため、ユーザーが登録した企業リストも渡す
+    companies = Company.query.filter_by(user_id=user_id).order_by(Company.name).all()
+
+    return render_template('memos.html', memos=memos, companies=companies)
 
 @app.route('/add_memo', methods=['POST'])
 def add_memo():
     if 'username' not in session:
         return redirect(url_for('login'))
 
+    user_id = session.get('user_id')
+    if user_id is None:
+        flash('セッションエラー：ユーザーIDが見つかりません。再ログインしてください。', 'danger')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         title = request.form['title']
-        content = request.form.get('content', '未入力')
+        content = request.form.get('content', '')
+        company_id = request.form.get('company_id') # 企業IDは任意
+        
+        # company_id が空文字の場合、None に変換してデータベースにNULLとして保存
+        company_id_val = int(company_id) if company_id else None
 
-        new_memo_entry = (
-            f"タイトル: {title}, "
-            f"内容: {content}"
+        new_memo = Memo(
+            user_id=user_id,
+            company_id=company_id_val,
+            title=title,
+            content=content
         )
+        db.session.add(new_memo)
+        db.session.commit()
 
-        memos_list = load_data(MEMOS_FILE)
-        memos_list.append(new_memo_entry)
-        save_data(MEMOS_FILE, memos_list)
+        flash(f'メモ「{title}」を追加しました。', 'success')
 
     return redirect(url_for('memos'))
 
-
+# ... (app.run の部分) ...
 if __name__ == '__main__':
     # ローカル開発時にデータベースを初期化したい場合、以下のブロックを一度実行します。
     # すでにdb.create_all()は@app.before_requestデコレータで初回リクエスト時に実行されるため、

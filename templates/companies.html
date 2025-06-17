@@ -36,12 +36,12 @@
                 </tr>
             </thead>
             <tbody>
-                {% for company_data in companies %}
+                {% for company in companies %}
                 <tr>
-                    <td>{{ company_data.name }}</td>
-                    <td>{{ company_data.application_date }}</td>
-                    <td>{{ company_data.selection_stage }}</td>
-                    <td>{{ company_data.result }}</td>
+                    <td><a href="{{ url_for('company_detail', company_id=company.id) }}">{{ company.name }}</a></td> {# ★ここを修正しました★ #}
+                    <td>{{ company.application_date }}</td>
+                    <td>{{ company.selection_stage }}</td>
+                    <td>{{ company.result }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -7,8 +7,13 @@
 
     <h3>新規面接情報追加</h3>
     <form action="{{ url_for('add_interview') }}" method="post">
-        <label for="int_company_name">企業名:</label>
-        <input type="text" id="int_company_name" name="company_name" required><br><br>
+        <label for="int_company_id">企業名:</label>
+        <select id="int_company_id" name="company_id" required>
+            <option value="">企業を選択してください</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}">{{ company.name }}</option>
+            {% endfor %}
+        </select><br><br>
 
         <label for="interview_date_time">日時 (例: 2025/06/15 14:00):</label>
         <input type="text" id="interview_date_time" name="date_time"><br><br>
@@ -18,6 +23,12 @@
 
         <label for="interview_person">担当者:</label>
         <input type="text" id="interview_person" name="person"><br><br>
+
+        <label for="interview_url">URL:</label> {# ★URLフィールド追加★ #}
+        <input type="url" id="interview_url" name="url"><br><br>
+
+        <label for="interview_notes">メモ:</label><br> {# ★メモフィールド追加★ #}
+        <textarea id="interview_notes" name="notes" rows="3" cols="50"></textarea><br><br>
 
         <input type="submit" value="面接情報を追加">
     </form>
@@ -33,15 +44,19 @@
                     <th>日時</th>
                     <th>場所</th>
                     <th>担当者</th>
+                    <th>URL</th> {# ★URL列追加★ #}
+                    <th>メモ</th> {# ★メモ列追加★ #}
                 </tr>
             </thead>
             <tbody>
-                {% for interview_data in interviews %}
+                {% for interview in interviews %} {# 変数名をinterviewに変更 #}
                 <tr>
-                    <td>{{ interview_data.company_name }}</td>
-                    <td>{{ interview_data.date_time }}</td>
-                    <td>{{ interview_data.location }}</td>
-                    <td>{{ interview_data.person }}</td>
+                    <td>{{ interview.company.name if interview.company else '不明' }}</td> {# companyリレーション経由で企業名を取得 #}
+                    <td>{{ interview.date_time }}</td>
+                    <td>{{ interview.location }}</td>
+                    <td>{{ interview.person }}</td>
+                    <td><a href="{{ interview.url }}" target="_blank">{{ interview.url }}</a></td> {# ★URL表示★ #}
+                    <td>{{ interview.notes }}</td> {# ★メモ表示★ #}
                 </tr>
                 {% endfor %}
             </tbody>

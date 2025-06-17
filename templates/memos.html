@@ -10,6 +10,14 @@
         <label for="memo_title">タイトル:</label>
         <input type="text" id="memo_title" name="title" required><br><br>
 
+        <label for="memo_company_id">関連企業 (任意):</label> {# ★企業選択追加★ #}
+        <select id="memo_company_id" name="company_id">
+            <option value="">選択しない</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}">{{ company.name }}</option>
+            {% endfor %}
+        </select><br><br>
+
         <label for="memo_content">内容:</label><br>
         <textarea id="memo_content" name="content" rows="5" cols="50"></textarea><br><br>
 
@@ -25,13 +33,15 @@
                 <tr>
                     <th>タイトル</th>
                     <th>内容</th>
+                    <th>関連企業</th> {# ★関連企業列追加★ #}
                 </tr>
             </thead>
             <tbody>
-                {% for memo_data in memos %}
+                {% for memo, company_name in memos %} {# ★変数名を変更：タプルで受け取る ★ #}
                 <tr>
-                    <td>{{ memo_data.title }}</td>
-                    <td>{{ memo_data.content }}</td>
+                    <td>{{ memo.title }}</td>
+                    <td>{{ memo.content }}</td>
+                    <td>{{ company_name if company_name else 'なし' }}</td> {# ★関連企業表示★ #}
                 </tr>
                 {% endfor %}
             </tbody>

@@ -10,14 +10,22 @@
         <label for="doc_name">書類名:</label>
         <input type="text" id="doc_name" name="document_name" required><br><br>
 
-        <label for="doc_company">企業名:</label>
-        <input type="text" id="doc_company" name="company_name"><br><br>
+        <label for="doc_company_id">関連企業 (任意):</label> {# ★企業選択追加★ #}
+        <select id="doc_company_id" name="company_id">
+            <option value="">選択しない</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}">{{ company.name }}</option>
+            {% endfor %}
+        </select><br><br>
 
         <label for="submission_date">提出日 (例: 2025/06/10):</label>
         <input type="text" id="submission_date" name="submission_date"><br><br>
 
         <label for="doc_status">状況:</label>
         <input type="text" id="doc_status" name="status"><br><br>
+
+        <label for="file_path">ファイルパス/URL:</label> {# ★ファイルパス/URLフィールド追加★ #}
+        <input type="text" id="file_path" name="file_path"><br><br>
 
         <input type="submit" value="書類情報を追加">
     </form>
@@ -30,18 +38,20 @@
             <thead>
                 <tr>
                     <th>書類名</th>
-                    <th>企業名</th>
                     <th>提出日</th>
                     <th>状況</th>
+                    <th>関連企業</th> {# ★関連企業列追加★ #}
+                    <th>ファイルパス/URL</th> {# ★ファイルパス/URL列追加★ #}
                 </tr>
             </thead>
             <tbody>
-                {% for doc_data in documents %}
+                {% for doc, company_name in documents %} {# ★変数名を変更：タプルで受け取る ★ #}
                 <tr>
-                    <td>{{ doc_data.document_name }}</td>
-                    <td>{{ doc_data.company_name }}</td>
-                    <td>{{ doc_data.submission_date }}</td>
-                    <td>{{ doc_data.status }}</td>
+                    <td>{{ doc.document_name }}</td>
+                    <td>{{ doc.submission_date }}</td>
+                    <td>{{ doc.status }}</td>
+                    <td>{{ company_name if company_name else 'なし' }}</td> {# ★関連企業表示★ #}
+                    <td><a href="{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a></td> {# ★ファイルパス/URL表示★ #}
                 </tr>
                 {% endfor %}
             </tbody>
