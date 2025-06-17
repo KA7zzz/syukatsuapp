@@ -8,16 +8,16 @@ from datetime import datetime # 日付を扱うために追加
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'super_secret_dev_key')
 
-# --- データベース設定 (SQLite) ---
-base_dir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(base_dir, 'data', 'site.db')
-render_db_folder_path = os.path.join('/opt', 'render', 'project', 'src', 'data')
-render_db_file_path = os.path.join(render_db_folder_path, 'site.db')
+# --- データベース設定 (PostgreSQL - Neon) ---
+# ★ここを大幅に修正します★
+# Renderで環境変数として設定する接続文字列
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+if not app.config['SQLALCHEMY_DATABASE_URI']:
+    # ローカル開発用のデフォルト値（Neonの接続文字列に置き換える）
+    # YOUR_NEON_CONNECTION_STRING をステップ1でコピーした接続文字列に置き換えてください
+    app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://user:password@host/dbname?sslmode=require" # <-- ここをあなたのNeon接続文字列に置き換え！
+    print("警告: DATABASE_URL 環境変数が設定されていません。ローカルのデフォルト接続文字列を使用します。")
 
-if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{render_db_file_path}'
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -119,17 +119,22 @@ class Memo(db.Model):
 # --- 既存のテキストファイル操作関数 (データベース移行が完了したら削除します) ---
 
 
-# --- アプリケーションルート ---
-
 @app.before_request
 def create_tables():
-    # データベースファイルが存在しない場合のみ作成
-    if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
-        db_file_exists = os.path.exists(render_db_file_path)
-    else:
-        db_file_exists = os.path.exists(db_path)
-
-    if not db_file_exists:
+    # データベーステーブルが存在しない場合のみ作成
+    # PostgreSQLの場合、db.create_all()は接続先のデータベースにテーブルを作成します。
+    # 警告: 開発段階でテーブル構造を頻繁に変える場合、Alembicなどのマイグレーションツールを導入するのが理想ですが、
+    # 今回はシンプルさのため db.create_all() を使用します。
+    # 本番環境(Render)では初回デプロイ時にのみ有効になるようにしておくのが安全です。
+    # Renderでは環境変数 DATABASE_URL が存在するかどうかで本番環境と見なし、
+    # そうでない場合はローカル環境と見なすことが多いです。
+    # ここでは、db.session.query(User).first() でテーブルの存在をチェックします。
+    try:
+        with app.app_context():
+            db.session.query(User).first() # Userテーブルにアクセスを試みる
+    except Exception as e:
+        # テーブルが存在しないなどのエラーが発生したら作成
+        print(f"データベーステーブルが見つからないか、アクセスできませんでした: {e}")
         with app.app_context():
             db.create_all()
             print("データベーステーブルが作成されました。")
