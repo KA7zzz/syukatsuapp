@@ -28,7 +28,7 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
     # このユーザーが登録した企業情報を参照できるようにリレーションを追加
     companies = db.relationship('Company', backref='user', lazy=True, cascade="all, delete-orphan")
 
