@@ -47,23 +47,61 @@
         .login-container input[type="submit"]:hover {
             background-color: #0056b3;
         }
-        .error-message {
+        /* フラッシュメッセージのスタイル */
+        .flashes {
+            list-style-type: none;
+            padding: 0;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .flashes li {
+            padding: 8px 15px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .flashes .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flashes .danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flashes .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        /* 以前のerror-messageはflashメッセージで代用するため不要ですが、
+           もし残したい場合はこのスタイルを残してください */
+        /* .error-message {
             color: red;
             margin-top: 10px;
-        }
+        } */
     </style>
 </head>
 <body>
     <div class="login-container">
         <h2>就活管理アプリ ログイン</h2>
-        <form action="/login" method="post">
+        {# フラッシュメッセージの表示エリア #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        <form action="{{ url_for('login') }}" method="post"> {# actionはurl_for('login')の方が推奨 #}
             <input type="text" name="username" placeholder="ユーザー名" required>
             <input type="password" name="password" placeholder="パスワード" required>
             <input type="submit" value="ログイン">
         </form>
-        {% if error %}
-        <p class="error-message">{{ error }}</p>
-        {% endif %}
+        <p>アカウントをお持ちでないですか？ <a href="{{ url_for('register') }}">新規登録はこちら</a></p>
     </div>
 </body>
 </html>

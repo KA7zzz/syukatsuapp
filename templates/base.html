@@ -3,12 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}みんなの就活管理アプリ{% endblock %}</title>
+    <title>{% block title %}就活管理アプリ{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    {# フラッシュメッセージの表示エリア (ページ上部に表示) #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
     <div class="navbar">
-        <h1>みんなの就活管理アプリ</h1>
+        <h1>就活管理アプリ</h1>
         <nav>
             {% if session.username %}
             <a href="{{ url_for('dashboard') }}">ダッシュボード</a>
@@ -22,5 +33,42 @@
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+
+    {# フラッシュメッセージのスタイルをここに直接記述（またはstyle.cssに移動） #}
+    <style>
+        .flashes {
+            list-style-type: none;
+            padding: 10px 20px;
+            margin: 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-sizing: border-box; /* paddingを含めて幅を計算 */
+        }
+        .flashes li {
+            padding: 10px 20px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 0.95em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .flashes .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flashes .danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flashes .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
 </body>
 </html>
