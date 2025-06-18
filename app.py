@@ -50,11 +50,13 @@ class User(db.Model, UserMixin):
 class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    application_date = db.Column(db.String(20)) # 日付形式で保存する文字列
+    industry = db.Column(db.String(100))  # ★追加
+    url = db.Column(db.String(200))      # ★追加
+    notes = db.Column(db.Text)           # ★追加
+    application_date = db.Column(db.String(20))
     selection_stage = db.Column(db.String(50))
     result = db.Column(db.String(50))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
     # ... (以下、Company, Interview, Task, Document, Memoのモデル定義は変更なし) ...
     def __repr__(self):
         return f'<Company {self.name}>'
