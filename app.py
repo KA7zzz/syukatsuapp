@@ -22,11 +22,26 @@ if not app.config['SQLALCHEMY_DATABASE_URI']:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# データベースの初期化
 db = SQLAlchemy(app)
 
-# --- データベースモデルの定義 ---
+# --- ここから追加 ---
+# Flask-Loginの設定
+login_manager = LoginManager()
+login_manager.init_app(app)
+# ログインしていないユーザーがログイン必須ページにアクセスしたときに
+# リダイレクトされるページ（ログインページのルート名）を指定
+login_manager.login_view = 'login' 
 
-class User(db.Model):
+@login_manager.user_loader
+def load_user(user_id):
+    # sessionに保存されたユーザーIDを使って、実際のユーザーオブジェクトを返す
+    # これにより、どのページでもcurrent_userでログイン中のユーザー情報を取得できる
+    return User.query.get(int(user_id))
+# --- ここまで追加 ---
+
+# データベースモデルの定義
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
