@@ -203,59 +203,34 @@ def register():
     return render_template('register.html')
 
 
-@app.route('/dashboard')
+# 元々あった /dashboard と /companies のルートは削除してください
+
+@app.route('/dashboard', methods=['GET', 'POST'])
+@login_required
 def dashboard():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    return render_template('dashboard.html', username=session['username'])
-
-# --- 応募企業情報 (データベース化) ---
-@app.route('/companies')
-def companies():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    # ★ここからデータベースから取得するロジックに変更★
-    user_id = session.get('user_id')
-    # ログイン中のユーザーが登録した企業情報のみを取得
-    companies = Company.query.filter_by(user_id=user_id).order_by(Company.name).all()
-    
-    return render_template('companies.html', companies=companies)
-
-@app.route('/add_company', methods=['POST'])
-def add_company():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    # ★ここからデータベースに保存するロジックに変更★
-    user_id = session.get('user_id')
-    if user_id is None: # ユーザーIDがセッションにない場合はエラーまたはリダイレクト
-        flash('セッションエラー：ユーザーIDが見つかりません。再ログインしてください。', 'danger')
-        return redirect(url_for('login'))
-
+    # POSTリクエスト（企業情報の入力フォームが送信された時）の処理
     if request.method == 'POST':
-        company_name = request.form['company_name']
-        application_date = request.form.get('application_date', '') # 空文字列で保存
-        selection_stage = request.form.get('selection_stage', '')
-        result = request.form.get('result', '')
+        name = request.form.get('name')
+        industry = request.form.get('industry')
+        url = request.form.get('url')
+        notes = request.form.get('notes')
 
-        # 新しいCompanyオブジェクトを作成
-        new_company = Company(
-            name=company_name,
-            application_date=application_date,
-            selection_stage=selection_stage,
-            result=result,
-            user_id=user_id # ログインユーザーのIDを割り当てる
-        )
-        db.session.add(new_company) # データベースに追加
-        db.session.commit() # 変更をコミットして保存
+        if name: # 会社名が入力されていれば
+            new_company = Company(
+                name=name,
+                industry=industry,
+                url=url,
+                notes=notes,
+                user_id=current_user.id
+            )
+            db.session.add(new_company)
+            db.session.commit()
+            flash('企業が追加されました', 'success')
+        return redirect(url_for('dashboard'))
 
-        flash(f'企業「{company_name}」を追加しました。', 'success')
-
-    return redirect(url_for('companies'))
-
-# app.py のルート定義セクションに追加
-# 例: /companies ルートの後あたり
+    # GETリクエスト（ページを普通に表示した時）の処理
+    companies = Company.query.filter_by(user_id=current_user.id).order_by(Company.name).all()
+    return render_template('dashboard.html', companies=companies)
 
 # --- 企業詳細ページ ---
 @app.route('/company/<int:company_id>')

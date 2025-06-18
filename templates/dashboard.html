@@ -1,36 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %}ダッシュボード - 就活管理アプリ{% endblock %}
-
 {% block content %}
-    <h2>ようこそ、{{ session.username }}さん！</h2>
-    <p>以下の機能を使って、就職活動を効率的に管理しましょう！</p>
+<div class="container mt-4">
+    <h1 class="mb-4">ダッシュボード</h1>
 
-    <div class="dashboard-grid">
-        <div class="card">
-            <h3>応募企業情報</h3>
-            <p>応募した企業の情報を記録・確認できます。</p>
-            <a href="{{ url_for('companies') }}">詳細を見る</a>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    応募企業を追加
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('dashboard') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">企業名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="industry" class="form-label">業界</label>
+                            <input type="text" class="form-control" id="industry" name="industry">
+                        </div>
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL</label>
+                            <input type="url" class="form-control" id="url" name="url">
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">メモ</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">追加</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card">
-            <h3>面接スケジュール</h3>
-            <p>面接の日時や場所を管理できます。</p>
-            <a href="{{ url_for('interviews') }}">詳細を見る</a> {# ★ここを修正しました★ #}
-        </div>
-        <div class="card">
-            <h3>タスク管理</h3>
-            <p>就活に関するタスクの進捗を管理できます。</p>
-            <a href="{{ url_for('tasks') }}">詳細を見る</a> {# ★ここを修正しました★ #}
-        </div>
-        <div class="card">
-            <h3>応募書類管理</h3>
-            <p>応募書類のバージョンや提出状況を管理できます。</p>
-            <a href="{{ url_for('documents') }}">詳細を見る</a> {# ★ここを修正しました★ #}
-        </div>
-        <div class="card">
-            <h3>メモ</h3>
-            <p>企業や面接に関するメモを自由に記録できます。</p>
-            <a href="{{ url_for('memos') }}">詳細を見る</a> {# ★ここを修正しました★ #}
+
+        <div class="col-md-8">
+            <h2>応募企業一覧</h2>
+            <div class="list-group">
+                {% if companies %}
+                    {% for company in companies %}
+                        <a href="{{ url_for('company_detail', company_id=company.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ company.name }}</h5>
+                                <small>{{ company.industry or '業界未設定' }}</small>
+                            </div>
+                            <p class="mb-1">{{ company.notes or 'メモはありません' }}</p>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <p>まだ応募企業はありません。左のフォームから追加してください。</p>
+                {% endif %}
+            </div>
         </div>
     </div>
+</div>
 {% endblock %}
