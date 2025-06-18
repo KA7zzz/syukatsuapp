@@ -198,16 +198,18 @@ def dashboard():
     companies = Company.query.filter_by(user_id=current_user.id).order_by(Company.name).all()
     return render_template('dashboard.html', companies=companies)
 
-# ★変更点: すべてのページを @login_required で保護
+# --- この下のルートをすべて置き換えてください ---
+
 @app.route('/company/<int:company_id>')
 @login_required
 def company_detail(company_id):
     company = Company.query.filter_by(id=company_id, user_id=current_user.id).first_or_404()
-    # ... (このルートの残りのロジックは変更なし) ...
-    interviews = Interview.query.filter_by(company_id=company_id, user_id=current_user.id).order_by(Interview.date_time).all()
-    tasks = Task.query.filter_by(company_id=company_id, user_id=current_user.id).order_by(Task.deadline).all()
-    documents = Document.query.filter_by(company_id=company_id, user_id=current_user.id).order_by(Document.document_name).all()
-    memos = Memo.query.filter_by(company_id=company_id, user_id=current_user.id).order_by(Memo.title).all()
+    
+    # その企業に関連する情報を取得
+    interviews = Interview.query.filter_by(company_id=company.id).order_by(Interview.date_time.desc()).all()
+    tasks = Task.query.filter_by(company_id=company.id).order_by(Task.deadline).all()
+    documents = Document.query.filter_by(company_id=company.id).order_by(Document.document_name).all()
+    memos = Memo.query.filter_by(company_id=company.id).order_by(Memo.title).all()
 
     return render_template(
         'company_detail.html',
@@ -218,14 +220,121 @@ def company_detail(company_id):
         memos=memos
     )
 
-# ... (add_company, add_interviewなどの他のルートも同様に @login_required を付けることを推奨) ...
-# 例：
-@app.route('/add_company', methods=['POST'])
+# --- 企業情報の編集・削除 ---
+@app.route('/company/<int:company_id>/edit', methods=['POST'])
 @login_required
-def add_company():
-    # ... ロジック ...
-    # user_id = session.get('user_id') の代わりに user_id=current_user.id を使う
-    pass # このルートはdashboardに統合されたので実際には不要
+def edit_company(company_id):
+    company = Company.query.filter_by(id=company_id, user_id=current_user.id).first_or_404()
+    company.name = request.form.get('name')
+    company.industry = request.form.get('industry')
+    company.url = request.form.get('url')
+    company.notes = request.form.get('notes')
+    company.application_date = request.form.get('application_date')
+    company.selection_stage = request.form.get('selection_stage')
+    company.result = request.form.get('result')
+    db.session.commit()
+    flash('企業情報が更新されました', 'success')
+    return redirect(url_for('company_detail', company_id=company.id))
+
+@app.route('/company/<int:company_id>/delete', methods=['POST'])
+@login_required
+def delete_company(company_id):
+    company = Company.query.filter_by(id=company_id, user_id=current_user.id).first_or_404()
+    db.session.delete(company)
+    db.session.commit()
+    flash('企業情報を削除しました', 'success')
+    return redirect(url_for('dashboard'))
+
+
+# --- 各機能の追加・削除ルート ---
+
+# 面接の追加
+@app.route('/company/<int:company_id>/interview/add', methods=['POST'])
+@login_required
+def add_interview(company_id):
+    company = Company.query.filter_by(id=company_id, user_id=current_user.id).first_or_404()
+    new_interview = Interview(
+        company_id=company.id,
+        user_id=current_user.id,
+        date_time=request.form.get('date_time'),
+        location=request.form.get('location'),
+        person=request.form.get('person'),
+        url=request.form.get('url'),
+        notes=request.form.get('notes')
+    )
+    db.session.add(new_interview)
+    db.session.commit()
+    flash('面接情報を追加しました', 'success')
+    return redirect(url_for('company_detail', company_id=company.id))
+
+# タスクの追加
+@app.route('/company/<int:company_id>/task/add', methods=['POST'])
+@login_required
+def add_task(company_id):
+    company = Company.query.filter_by(id=company_id, user_id=current_user.id).first_or_404()
+    content = request.form.get('content')
+    if content:
+        new_task = Task(
+            user_id=current_user.id,
+            company_id=company.id,
+            content=content,
+            deadline=request.form.get('deadline'),
+            status='未完了'
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        flash('タスクを追加しました', 'success')
+    return redirect(url_for('company_detail', company_id=company.id))
+
+# タスクの完了/未完了 トグル
+@app.route('/task/<int:task_id>/toggle', methods=['POST'])
+@login_required
+def toggle_task(task_id):
+    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first_or_404()
+    company_id = task.company_id
+    task.status = '完了' if task.status == '未完了' else '未完了'
+    db.session.commit()
+    flash('タスクの状態を更新しました', 'success')
+    return redirect(url_for('company_detail', company_id=company_id))
+
+# 書類の追加
+@app.route('/company/<int:company_id>/document/add', methods=['POST'])
+@login_required
+def add_document(company_id):
+    # (ファイルアップロードのロジックは複雑なので、ここでは情報の保存のみ)
+    company = Company.query.filter_by(id=company_id, user_id=current_user.id).first_or_404()
+    new_document = Document(
+        user_id=current_user.id,
+        company_id=company.id,
+        document_name=request.form.get('document_name'),
+        submission_date=request.form.get('submission_date'),
+        status=request.form.get('status'),
+        file_path=request.form.get('file_path') # URLやメモとして使う
+    )
+    db.session.add(new_document)
+    db.session.commit()
+    flash('書類情報を追加しました', 'success')
+    return redirect(url_for('company_detail', company_id=company.id))
+
+# メモの追加
+@app.route('/company/<int:company_id>/memo/add', methods=['POST'])
+@login_required
+def add_memo(company_id):
+    company = Company.query.filter_by(id=company_id, user_id=current_user.id).first_or_404()
+    title = request.form.get('title')
+    if title:
+        new_memo = Memo(
+            user_id=current_user.id,
+            company_id=company.id,
+            title=title,
+            content=request.form.get('content')
+        )
+        db.session.add(new_memo)
+        db.session.commit()
+        flash('メモを追加しました', 'success')
+    return redirect(url_for('company_detail', company_id=company.id))
+
+# --- この下に、各アイテムの削除ルートを追加可能 (例: /interview/<id>/delete) ---
 
 
 # --- この下の、/companies, /interviews, /tasks, /documents, /memos のような
