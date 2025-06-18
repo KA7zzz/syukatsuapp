@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from datetime import datetime # 日付を扱うために追加
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 
 # --- Flaskアプリケーションの基本設定 ---
 app = Flask(__name__)
