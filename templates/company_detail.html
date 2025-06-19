@@ -7,11 +7,21 @@
     <p><a href="{{ url_for('dashboard') }}">企業一覧に戻る</a></p>
 
     <div class="company-detail-section">
-        <h3>基本情報</h3>
-        <p><strong>企業名:</strong> {{ company.name }}</p>
-        <p><strong>応募日:</strong> {{ company.application_date }}</p>
-        <p><strong>選考段階:</strong> {{ company.selection_stage }}</p>
-        <p><strong>結果:</strong> {{ company.result }}</p>
+        <h3>基本情報・編集</h3>
+        <form action="{{ url_for('edit_company', company_id=company.id) }}" method="post">
+            <p><strong>企業名:</strong> <input type="text" name="name" value="{{ company.name }}" required></p>
+            <p><strong>業界:</strong> <input type="text" name="industry" value="{{ company.industry or '' }}"></p>
+            <p><strong>URL:</strong> <input type="url" name="url" value="{{ company.url or '' }}"></p>
+            <p><strong>応募日:</strong> <input type="date" name="application_date" value="{{ company.application_date or '' }}"></p>
+            <p><strong>選考段階:</strong> <input type="text" name="selection_stage" value="{{ company.selection_stage or '' }}"></p>
+            <p><strong>結果:</strong> <input type="text" name="result" value="{{ company.result or '' }}"></p>
+            <p><strong>メモ:</strong></p>
+            <textarea name="notes" rows="4" style="width:100%;">{{ company.notes or '' }}</textarea>
+            <p><input type="submit" value="更新" class="btn btn-primary"></p>
+        </form>
+        <form action="{{ url_for('delete_company', company_id=company.id) }}" method="post" onsubmit="return confirm('本当にこの企業情報を削除しますか？関連する全ての情報が削除されます。');">
+            <input type="submit" value="この企業を削除" class="btn btn-danger">
+        </form>
     </div>
 
     <hr>
@@ -44,7 +54,15 @@
         {% else %}
             <p>この企業には面接情報が登録されていません。</p>
         {% endif %}
-        <p><a href="{{ url_for('interviews') }}">面接スケジュールに追加する</a></p>
+        <h4>面接を追加</h4>
+        <form action="{{ url_for('add_interview', company_id=company.id) }}" method="post">
+            <input type="datetime-local" name="date_time" required>
+            <input type="text" name="location" placeholder="場所 (例: オンライン)">
+            <input type="text" name="person" placeholder="担当者">
+            <input type="url" name="url" placeholder="面接URL">
+            <textarea name="notes" placeholder="メモ"></textarea>
+            <input type="submit" value="面接を追加">
+        </form>
     </div>
 
     <hr>
@@ -68,14 +86,9 @@
                         <td>{{ task.deadline }}</td>
                         <td>{{ task.status }}</td>
                         <td>
-                            {% if task.status == '未完了' %}
-                                <form action="{{ url_for('complete_task') }}" method="post" style="display:inline;">
-                                    <input type="hidden" name="task_id" value="{{ task.id }}">
-                                    <input type="submit" value="完了" style="padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                </form>
-                            {% else %}
-                                <span>完了済み</span>
-                            {% endif %}
+                            <form action="{{ url_for('toggle_task', task_id=task.id) }}" method="post" style="display:inline;">
+                                <input type="submit" value="{{ '未完了に戻す' if task.status == '完了' else '完了にする' }}" style="padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -84,7 +97,12 @@
         {% else %}
             <p>この企業に関連するタスクは登録されていません。</p>
         {% endif %}
-        <p><a href="{{ url_for('tasks') }}">タスク管理に追加する</a></p>
+        <h4>タスクを追加</h4>
+        <form action="{{ url_for('add_task', company_id=company.id) }}" method="post">
+            <input type="text" name="content" placeholder="タスク内容" required>
+            <input type="date" name="deadline">
+            <input type="submit" value="タスクを追加">
+        </form>
     </div>
 
     <hr>
@@ -115,7 +133,14 @@
         {% else %}
             <p>この企業に関連する応募書類は登録されていません。</p>
         {% endif %}
-        <p><a href="{{ url_for('documents') }}">応募書類管理に追加する</a></p>
+        <h4>書類を追加</h4>
+        <form action="{{ url_for('add_document', company_id=company.id) }}" method="post">
+            <input type="text" name="document_name" placeholder="書類名" required>
+            <input type="date" name="submission_date">
+            <input type="text" name="status" placeholder="状況 (例: 提出済み)">
+            <input type="text" name="file_path" placeholder="ファイルパス/URL">
+            <input type="submit" value="書類を追加">
+        </form>
     </div>
 
     <hr>
@@ -134,7 +159,7 @@
                     {% for memo in memos %}
                     <tr>
                         <td>{{ memo.title }}</td>
-                        <td>{{ memo.content }}</td>
+                        <td>{{ memo.content|safe }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -142,7 +167,12 @@
         {% else %}
             <p>この企業に関連するメモは登録されていません。</p>
         {% endif %}
-        <p><a href="{{ url_for('memos') }}">メモ管理に追加する</a></p>
+        <h4>メモを追加</h4>
+        <form action="{{ url_for('add_memo', company_id=company.id) }}" method="post">
+            <input type="text" name="title" placeholder="タイトル" required>
+            <textarea name="content" placeholder="内容"></textarea>
+            <input type="submit" value="メモを追加">
+        </form>
     </div>
 
     <style>
@@ -160,6 +190,10 @@
             padding-bottom: 5px;
             margin-bottom: 15px;
         }
+        .company-detail-section h4 {
+            margin-top: 20px;
+            color: #333;
+        }
         .company-detail-section table {
             margin-top: 15px;
         }
@@ -170,6 +204,28 @@
         }
         .company-detail-section th {
             background-color: #e9ecef;
+        }
+        .company-detail-section form input[type="text"],
+        .company-detail-section form input[type="url"],
+        .company-detail-section form input[type="date"],
+        .company-detail-section form input[type="datetime-local"],
+        .company-detail-section form textarea {
+            width: 95%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .company-detail-section form input[type="submit"] {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-danger {
+            background-color: #dc3545 !important;
         }
     </style>
 {% endblock %}
