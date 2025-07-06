@@ -7,6 +7,13 @@
     <p>ようこそ、{{ current_user.username }}さん！</p>
 
     <hr>
+    
+    <div class="calendar-section">
+        <h3>スケジュールカレンダー</h3>
+        <div id='calendar'></div>
+    </div>
+
+    <hr>
 
     <div class="list-section">
         <h3>応募企業一覧</h3>
@@ -28,9 +35,7 @@
                         <td>{{ company.industry or '未設定' }}</td>
                         <td>{{ company.selection_stage or '未設定' }}</td>
                         <td>{{ company.result or '選考中' }}</td>
-                        <td>
-                            <a href="{{ url_for('company_detail', company_id=company.id) }}">詳細を見る</a>
-                        </td>
+                        <td><a href="{{ url_for('company_detail', company_id=company.id) }}">詳細を見る</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -49,34 +54,44 @@
                 <label for="name">企業名</label>
                 <input type="text" class="form-control" id="name" name="name" required>
             </div>
-            <div class="form-group">
-                <label for="industry">業界</label>
-                <input type="text" class="form-control" id="industry" name="industry">
-            </div>
-            <div class="form-group">
-                <label for="url">企業URL</label>
-                <input type="url" class="form-control" id="url" name="url">
-            </div>
-            <div class="form-group">
-                <label for="notes">メモ</label>
-                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
-            </div>
             <button type="submit" class="btn btn-primary mt-3">追加</button>
         </form>
     </div>
 
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth', // 月表示をデフォルトに
+          locale: 'ja', // 日本語化
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+          },
+          // app.pyから渡されたイベントデータをここに挿入
+          events: JSON.parse('{{ calendar_events|tojson|safe }}'),
+          eventClick: function(info) {
+            // イベントをクリックした時にURLに飛ぶようにする
+            // リンクがないイベント(#)の場合は何もしない
+            if (info.event.url && info.event.url !== '#') {
+                window.open(info.event.url, "_self"); // 同じタブで開く
+                info.jsEvent.preventDefault(); // デフォルトの動作をキャンセル
+            }
+          }
+        });
+        calendar.render();
+      });
+    </script>
     <style>
-        .list-section, .form-section {
+        .calendar-section, .list-section, .form-section {
             background-color: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 25px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-
-        .list-section table {
-            margin-top: 15px;
-        }
+        /* ...その他のスタイルは変更なし... */
         .list-section th, .list-section td {
             padding: 8px;
             text-align: left;
@@ -84,34 +99,6 @@
         }
         .list-section th {
             background-color: #e9ecef;
-        }
-        
-        .form-section .form-group {
-            margin-bottom: 1rem;
-        }
-        /* BootstrapのクラスをCSSで再現 */
-        .form-control {
-            width: 100%;
-            padding: .375rem .75rem;
-            border: 1px solid #ced4da;
-            border-radius: .25rem;
-        }
-        .btn {
-            display: inline-block;
-            font-weight: 400;
-            text-align: center;
-            vertical-align: middle;
-            cursor: pointer;
-            padding: .375rem .75rem;
-            border-radius: .25rem;
-        }
-        .btn-primary {
-            color: #fff;
-            background-color: #007bff;
-            border-color: #007bff;
-        }
-        .mt-3 {
-            margin-top: 1rem !important;
         }
     </style>
 {% endblock %}

@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from datetime import datetime
-
+import json
 # ★変更点: Flask-Loginから必要な機能をすべてインポート
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 
@@ -182,11 +182,13 @@ def register():
 
     return render_template('register.html')
 
-# ★変更点: 以前の改造を反映し、@login_requiredで保護
+
+# ★変更点: ダッシュボードのルートをカレンダー対応に
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required 
 def dashboard():
     if request.method == 'POST':
+        # ... 既存の企業追加ロジックは変更なし ...
         name = request.form.get('name')
         if name:
             new_company = Company(name=name, industry=request.form.get('industry'), url=request.form.get('url'), notes=request.form.get('notes'), user_id=current_user.id)
@@ -195,8 +197,62 @@ def dashboard():
             flash('企業が追加されました', 'success')
         return redirect(url_for('dashboard'))
     
-    companies = Company.query.filter_by(user_id=current_user.id).order_by(Company.name).all()
-    return render_template('dashboard.html', companies=companies)
+    # --- カレンダー用のイベント情報を収集 ---
+    calendar_events = []
+    
+    # 会社の応募日
+    companies = Company.query.filter_by(user_id=current_user.id).all()
+    for company in companies:
+        if company.application_date:
+            calendar_events.append({
+                'title': f"応募: {company.name}",
+                'start': company.application_date,
+                'url': url_for('company_detail', company_id=company.id),
+                'color': '#28a745' # Green
+            })
+
+    # 面接日
+    interviews = Interview.query.filter_by(user_id=current_user.id).all()
+    for interview in interviews:
+        if interview.date_time:
+            # datetime-local のフォーマット (YYYY-MM-DDTHH:MM) から日付を取得
+            start_date = interview.date_time.split('T')[0]
+            calendar_events.append({
+                'title': f"面接: {interview.company.name}",
+                'start': interview.date_time, # FullCalendarは T を認識する
+                'url': url_for('company_detail', company_id=interview.company_id),
+                'color': '#dc3545' # Red
+            })
+
+    # タスクの締切
+    tasks = Task.query.filter_by(user_id=current_user.id).filter_by(status='未完了').all()
+    for task in tasks:
+        if task.deadline:
+            calendar_events.append({
+                'title': f"タスク〆: {task.content[:10]}",
+                'start': task.deadline,
+                'url': url_for('company_detail', company_id=task.company_id) if task.company_id else '#',
+                'color': '#ffc107' # Yellow
+            })
+            
+    # 書類の提出日
+    documents = Document.query.filter_by(user_id=current_user.id).all()
+    for doc in documents:
+        if doc.submission_date:
+            calendar_events.append({
+                'title': f"書類提出: {doc.document_name}",
+                'start': doc.submission_date,
+                'url': url_for('company_detail', company_id=doc.company_id) if doc.company_id else '#',
+                'color': '#17a2b8' # Teal
+            })
+
+
+    return render_template(
+        'dashboard.html', 
+        companies=companies, 
+        calendar_events=json.dumps(calendar_events) # JSON形式でテンプレートに渡す
+    )
+
 
 # --- この下のルートをすべて置き換えてください ---
 
