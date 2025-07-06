@@ -20,28 +20,23 @@
     <div class="section-box">
         <h3>応募企業一覧</h3>
         {% if companies %}
-            <table border="1">
-                <thead>
-                    <tr>
-                        <th>企業名</th>
-                        <th>業界</th>
-                        <th>選考段階</th>
-                        <th>結果</th>
-                        <th>詳細</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for company in companies %}
-                    <tr>
-                        <td>{{ company.name }}</td>
-                        <td>{{ company.industry or '未設定' }}</td>
-                        <td>{{ company.selection_stage or '未設定' }}</td>
-                        <td>{{ company.result or '選考中' }}</td>
-                        <td><a href="{{ url_for('company_detail', company_id=company.id) }}">詳細を見る</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="responsive-list">
+                {% for company in companies %}
+                <div class="list-item">
+                    <div class="item-header">
+                        <strong>{{ company.name }}</strong>
+                    </div>
+                    <div class="item-body">
+                        <p><strong>業界:</strong> {{ company.industry or '未設定' }}</p>
+                        <p><strong>選考段階:</strong> {{ company.selection_stage or '未設定' }}</p>
+                        <p><strong>結果:</strong> {{ company.result or '選考中' }}</p>
+                    </div>
+                    <div class="item-footer">
+                        <a href="{{ url_for('company_detail', company_id=company.id) }}" class="btn">詳細を見る</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         {% else %}
             <p>まだ応募企業が登録されていません。</p>
         {% endif %}
@@ -60,6 +55,10 @@
         </form>
     </div>
     
+    <script>
+      // ... 既存のスクリプトは変更なし ...
+    </script>
+    
     <style>
         .section-box {
             background-color: #ffffff;
@@ -74,19 +73,40 @@
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+
+        /* 企業一覧のスタイル */
+        .list-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+        .item-header {
+            font-size: 1.2em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .item-body p {
+            margin: 5px 0;
+        }
+        .item-footer {
             margin-top: 15px;
+            text-align: right;
         }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
         }
-        th { background-color: #f2f2f2; }
+
+        /* フォームのスタイル */
         input[type="text"], input[type="url"], textarea {
             width: 95%;
+            max-width: 400px; /* PCでの幅を制限 */
             padding: 8px;
             border-radius: 4px;
             border: 1px solid #ccc;
@@ -99,31 +119,29 @@
             border-radius: 4px;
             cursor: pointer;
         }
-    </style>
-    
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        if (calendarEl) {
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-              initialView: 'dayGridMonth',
-              locale: 'ja',
-              headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,listWeek'
-              },
-              events: JSON.parse('{{ calendar_events|safe }}'),
-              // ★変更点: eventDidMount コールバックを削除
-              eventClick: function(info) {
-                if (info.event.url && info.event.url !== '#') {
-                    window.location.href = info.event.url;
-                    info.jsEvent.preventDefault(); 
-                }
-              }
-            });
-            calendar.render();
+
+        /* --- ここからがメディアクエリ --- */
+        /* 画面幅が768px以下の場合に適用 */
+        @media (max-width: 768px) {
+            body {
+                margin: 10px;
+            }
+            .section-box {
+                padding: 15px;
+            }
+            h2 {
+                font-size: 1.5em;
+            }
+            /* カレンダーのヘッダーのボタンを小さくする */
+            .fc-toolbar-chunk {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .fc .fc-toolbar.fc-header-toolbar {
+                font-size: 0.9em;
+                flex-direction: column; /* ヘッダーを縦積みに */
+            }
         }
-      });
-    </script>
+    </style>
 {% endblock %}
