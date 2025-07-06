@@ -10,7 +10,7 @@
     
     <div class="section-box">
         <h3>スケジュールカレンダー</h3>
-        <div id='calendar-container'>
+        <div id="calendar-wrapper">
             <div id='calendar'></div>
         </div>
     </div>
@@ -22,19 +22,15 @@
         {% if companies %}
             <div class="responsive-list">
                 {% for company in companies %}
-                <div class="list-item">
-                    <div class="item-header">
-                        <strong>{{ company.name }}</strong>
+                <a href="{{ url_for('company_detail', company_id=company.id) }}" class="list-item-link">
+                    <div class="list-item">
+                        <div class="item-header"><strong>{{ company.name }}</strong></div>
+                        <div class="item-body">
+                            <span><strong>業界:</strong> {{ company.industry or '未設定' }}</span>
+                            <span><strong>選考段階:</strong> {{ company.selection_stage or '未設定' }}</span>
+                        </div>
                     </div>
-                    <div class="item-body">
-                        <p><strong>業界:</strong> {{ company.industry or '未設定' }}</p>
-                        <p><strong>選考段階:</strong> {{ company.selection_stage or '未設定' }}</p>
-                        <p><strong>結果:</strong> {{ company.result or '選考中' }}</p>
-                    </div>
-                    <div class="item-footer">
-                        <a href="{{ url_for('company_detail', company_id=company.id) }}" class="btn">詳細を見る</a>
-                    </div>
-                </div>
+                </a>
                 {% endfor %}
             </div>
         {% else %}
@@ -45,103 +41,59 @@
     <hr>
 
     <div class="section-box">
-        <h3>企業を追加する</h3>
-        <form action="{{ url_for('dashboard') }}" method="post">
-            <p>企業名: <input type="text" name="name" required></p>
-            <p>業界: <input type="text" name="industry"></p>
-            <p>URL: <input type="url" name="url"></p>
-            <p>メモ: <textarea name="notes" rows="2"></textarea></p>
-            <button type="submit">追加</button>
-        </form>
-    </div>
+        </div>
     
     <script>
-      // ... 既存のスクリプトは変更なし ...
+        // ★変更点: カレンダー初期化スクリプトを元に戻す
+        document.addEventListener('DOMContentLoaded', function() {
+          var calendarEl = document.getElementById('calendar');
+          if (calendarEl) {
+              var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ja',
+                headerToolbar: {
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                events: JSON.parse('{{ calendar_events|safe }}'),
+                eventClick: function(info) {
+                  if (info.event.url && info.event.url !== '#') {
+                      window.location.href = info.event.url;
+                      info.jsEvent.preventDefault(); 
+                  }
+                }
+              });
+              calendar.render();
+          }
+        });
     </script>
     
     <style>
-        .section-box {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .section-box h3 {
-            margin-top: 0;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
+        .section-box { padding: 20px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        h3 { margin-top: 0; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px; }
 
         /* 企業一覧のスタイル */
-        .list-item {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            padding: 15px;
-        }
-        .item-header {
-            font-size: 1.2em;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
-        .item-body p {
-            margin: 5px 0;
-        }
-        .item-footer {
-            margin-top: 15px;
-            text-align: right;
-        }
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
+        .list-item-link { color: inherit; text-decoration: none; }
+        .list-item { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; padding: 15px; transition: background-color 0.2s; }
+        .list-item:hover { background-color: #f8f9fa; }
+        .item-header { font-size: 1.2em; margin-bottom: 10px; }
+        .item-body span { display: block; margin-bottom: 5px; color: #555; }
 
-        /* フォームのスタイル */
-        input[type="text"], input[type="url"], textarea {
-            width: 95%;
-            max-width: 400px; /* PCでの幅を制限 */
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 8px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        /* --- ここからがメディアクエリ --- */
-        /* 画面幅が768px以下の場合に適用 */
+        /* --- メディアクエリ --- */
         @media (max-width: 768px) {
-            body {
-                margin: 10px;
-            }
-            .section-box {
-                padding: 15px;
-            }
-            h2 {
-                font-size: 1.5em;
-            }
-            /* カレンダーのヘッダーのボタンを小さくする */
-            .fc-toolbar-chunk {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
+            body { margin: 10px; }
+            .section-box { padding: 15px; }
+            h2 { font-size: 1.5em; }
+            
+            /* ★変更点: カレンダーのツールバーのスタイルを調整 */
             .fc .fc-toolbar.fc-header-toolbar {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
                 font-size: 0.9em;
-                flex-direction: column; /* ヘッダーを縦積みに */
             }
+            .fc-toolbar-chunk { margin-bottom: 5px; }
         }
     </style>
 {% endblock %}
