@@ -4,21 +4,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{% block title %}就活管理アプリ{% endblock %}</title>
+    
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    
     <style>
         /* 基本的なスタイル */
-        body { font-family: sans-serif; margin: 20px; }
-        nav { margin-bottom: 20px; }
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        nav { background-color: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        nav a { color: #007bff; text-decoration: none; margin-right: 15px; }
+        nav a:hover { text-decoration: underline; }
+        main { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .flash { padding: 10px; margin-bottom: 10px; border-radius: 5px; }
         .flash.success { background-color: #d4edda; color: #155724; }
         .flash.danger { background-color: #f8d7da; color: #721c24; }
         .flash.info { background-color: #d1ecf1; color: #0c5460; }
-        /* カレンダーのイベントが見切れないように */
-        #calendar {
+        
+        /* カレンダーのコンテナのスタイル */
+        #calendar-container {
             max-width: 1100px;
             margin: 0 auto;
         }
     </style>
+    {% block head %}{% endblock %}
 </head>
 <body>
     <nav>

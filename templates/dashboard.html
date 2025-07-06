@@ -8,17 +8,19 @@
 
     <hr>
     
-    <div class="calendar-section">
+    <div class="section-box">
         <h3>スケジュールカレンダー</h3>
-        <div id='calendar'></div>
+        <div id='calendar-container'>
+            <div id='calendar'></div>
+        </div>
     </div>
 
     <hr>
 
-    <div class="list-section">
+    <div class="section-box">
         <h3>応募企業一覧</h3>
         {% if companies %}
-            <table border="1" style="width:100%; border-collapse: collapse;">
+            <table border="1">
                 <thead>
                     <tr>
                         <th>企業名</th>
@@ -41,64 +43,101 @@
                 </tbody>
             </table>
         {% else %}
-            <p>まだ応募企業が登録されていません。下のフォームから追加してください。</p>
+            <p>まだ応募企業が登録されていません。</p>
         {% endif %}
     </div>
 
     <hr>
 
-    <div class="form-section">
+    <div class="section-box">
         <h3>企業を追加する</h3>
         <form action="{{ url_for('dashboard') }}" method="post">
-            <div class="form-group">
-                <label for="name">企業名</label>
-                <input type="text" class="form-control" id="name" name="name" required>
-            </div>
-            <button type="submit" class="btn btn-primary mt-3">追加</button>
+            <p>企業名: <input type="text" name="name" required></p>
+            <p>業界: <input type="text" name="industry"></p>
+            <p>URL: <input type="url" name="url"></p>
+            <p>メモ: <textarea name="notes" rows="2"></textarea></p>
+            <button type="submit">追加</button>
         </form>
     </div>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-          initialView: 'dayGridMonth', // 月表示をデフォルトに
-          locale: 'ja', // 日本語化
-          headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,listWeek'
-          },
-          // app.pyから渡されたイベントデータをここに挿入
-          events: JSON.parse('{{ calendar_events|tojson|safe }}'),
-          eventClick: function(info) {
-            // イベントをクリックした時にURLに飛ぶようにする
-            // リンクがないイベント(#)の場合は何もしない
-            if (info.event.url && info.event.url !== '#') {
-                window.open(info.event.url, "_self"); // 同じタブで開く
-                info.jsEvent.preventDefault(); // デフォルトの動作をキャンセル
-            }
-          }
-        });
-        calendar.render();
-      });
-    </script>
     <style>
-        .calendar-section, .list-section, .form-section {
-            background-color: #f8f9fa;
+        .section-box {
+            background-color: #ffffff;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 25px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        /* ...その他のスタイルは変更なし... */
-        .list-section th, .list-section td {
-            padding: 8px;
+        .section-box h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
-        .list-section th {
-            background-color: #e9ecef;
+        th { background-color: #f2f2f2; }
+        input[type="text"], input[type="url"], textarea {
+            width: 95%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        /* カレンダーのイベントの色を調整 */
+        .fc-event {
+            border-width: 0 !important;
+            padding: 2px 4px !important;
+            color: white !important;
         }
     </style>
+    
+    <script>
+      // DOMが完全に読み込まれてからスクリプトを実行
+      document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        if (calendarEl) { // カレンダー要素が存在することを確認
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+              initialView: 'dayGridMonth',
+              locale: 'ja',
+              headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listWeek'
+              },
+              // ★重要: JSONデータを安全に渡す
+              events: JSON.parse('{{ calendar_events|safe }}'),
+              eventDidMount: function(info) {
+                  // イベントの色を個別に設定
+                  if (info.event.extendedProps.color) {
+                      info.el.style.backgroundColor = info.event.extendedProps.color;
+                  }
+              },
+              eventClick: function(info) {
+                if (info.event.url && info.event.url !== '#') {
+                    // 企業詳細ページに移動
+                    window.location.href = info.event.url;
+                    info.jsEvent.preventDefault(); 
+                }
+              }
+            });
+            calendar.render();
+        }
+      });
+    </script>
 {% endblock %}
