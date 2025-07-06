@@ -59,7 +59,7 @@
             <button type="submit">追加</button>
         </form>
     </div>
-
+    
     <style>
         .section-box {
             background-color: #ffffff;
@@ -99,19 +99,12 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        /* カレンダーのイベントの色を調整 */
-        .fc-event {
-            border-width: 0 !important;
-            padding: 2px 4px !important;
-            color: white !important;
-        }
     </style>
     
     <script>
-      // DOMが完全に読み込まれてからスクリプトを実行
       document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
-        if (calendarEl) { // カレンダー要素が存在することを確認
+        if (calendarEl) {
             var calendar = new FullCalendar.Calendar(calendarEl, {
               initialView: 'dayGridMonth',
               locale: 'ja',
@@ -120,17 +113,10 @@
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,listWeek'
               },
-              // ★重要: JSONデータを安全に渡す
               events: JSON.parse('{{ calendar_events|safe }}'),
-              eventDidMount: function(info) {
-                  // イベントの色を個別に設定
-                  if (info.event.extendedProps.color) {
-                      info.el.style.backgroundColor = info.event.extendedProps.color;
-                  }
-              },
+              // ★変更点: eventDidMount コールバックを削除
               eventClick: function(info) {
                 if (info.event.url && info.event.url !== '#') {
-                    // 企業詳細ページに移動
                     window.location.href = info.event.url;
                     info.jsEvent.preventDefault(); 
                 }
