@@ -9,30 +9,30 @@
     <div class="display-section">
         <div class="detail-box">
             <h3>基本情報</h3>
-            <table class="responsive-table">
-                <tr><th data-label="項目">企業名</th><td data-label="内容">{{ company.name }}</td></tr>
-                <tr><th data-label="項目">業界</th><td data-label="内容">{{ company.industry or '未設定' }}</td></tr>
-                <tr><th data-label="項目">URL</th><td data-label="内容"><a href="{{ company.url }}" target="_blank">{{ company.url }}</a></td></tr>
-                <tr><th data-label="項目">応募日</th><td data-label="内容">{{ company.application_date or '未設定' }}</td></tr>
-                <tr><th data-label="項目">選考段階</th><td data-label="内容">{{ company.selection_stage or '未設定' }}</td></tr>
-                <tr><th data-label="項目">結果</th><td data-label="内容">{{ company.result or '未設定' }}</td></tr>
-                <tr><th data-label="項目">メモ</th><td data-label="内容">{{ company.notes or '' }}</td></tr>
+            <table border="1">
+                <tr><th>企業名</th><td>{{ company.name }}</td></tr>
+                <tr><th>業界</th><td>{{ company.industry or '未設定' }}</td></tr>
+                <tr><th>URL</th><td><a href="{{ company.url }}" target="_blank">{{ company.url }}</a></td></tr>
+                <tr><th>応募日</th><td>{{ company.application_date or '未設定' }}</td></tr>
+                <tr><th>選考段階</th><td>{{ company.selection_stage or '未設定' }}</td></tr>
+                <tr><th>結果</th><td>{{ company.result or '未設定' }}</td></tr>
+                <tr><th>メモ</th><td>{{ company.notes or '' }}</td></tr>
             </table>
         </div>
 
         <div class="detail-box">
             <h3>面接スケジュール</h3>
             {% if interviews %}
-                <table class="responsive-table">
+                <table border="1">
                     <thead><tr><th>日時</th><th>場所</th><th>担当者</th><th>URL</th><th>メモ</th></tr></thead>
                     <tbody>
                         {% for interview in interviews %}
                         <tr>
-                            <td data-label="日時">{{ interview.date_time }}</td>
-                            <td data-label="場所">{{ interview.location }}</td>
-                            <td data-label="担当者">{{ interview.person }}</td>
-                            <td data-label="URL"><a href="{{ interview.url }}" target="_blank">{{ interview.url }}</a></td>
-                            <td data-label="メモ">{{ interview.notes }}</td>
+                            <td>{{ interview.date_time }}</td>
+                            <td>{{ interview.location }}</td>
+                            <td>{{ interview.person }}</td>
+                            <td><a href="{{ interview.url }}" target="_blank">{{ interview.url }}</a></td>
+                            <td>{{ interview.notes }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -41,54 +41,190 @@
                 <p>面接情報はありません。</p>
             {% endif %}
         </div>
+
+        <div class="detail-box">
+            <h3>タスク</h3>
+            {% if tasks %}
+                <table border="1">
+                    <thead><tr><th>タスク内容</th><th>期限</th><th>状態</th><th>操作</th></tr></thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.content }}</td>
+                            <td>{{ task.deadline }}</td>
+                            <td>{{ task.status }}</td>
+                            <td>
+                                <form action="{{ url_for('toggle_task', task_id=task.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn-toggle">{{ '未完了に戻す' if task.status == '完了' else '完了にする' }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>タスクはありません。</p>
+            {% endif %}
         </div>
+
+        <div class="detail-box">
+            <h3>応募書類</h3>
+            {% if documents %}
+                <table border="1">
+                    <thead><tr><th>書類名</th><th>提出日</th><th>状況</th><th>ファイルパス/URL</th></tr></thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td>{{ doc.document_name }}</td>
+                            <td>{{ doc.submission_date }}</td>
+                            <td>{{ doc.status }}</td>
+                            <td><a href="{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>応募書類はありません。</p>
+            {% endif %}
+        </div>
+
+        <div class="detail-box">
+            <h3>メモ</h3>
+            {% if memos %}
+                <table border="1">
+                    <thead><tr><th>タイトル</th><th>内容</th></tr></thead>
+                    <tbody>
+                        {% for memo in memos %}
+                        <tr>
+                            <td>{{ memo.title }}</td>
+                            <td>{{ memo.content|safe }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>メモはありません。</p>
+            {% endif %}
+        </div>
+    </div>
+
 
     <hr>
 
     <div class="action-section">
+        <h2>情報編集・追加</h2>
+
+        <div class="form-box">
+            <h3>基本情報の編集</h3>
+            <form action="{{ url_for('edit_company', company_id=company.id) }}" method="post">
+                <p>企業名: <input type="text" name="name" value="{{ company.name }}" required></p>
+                <p>業界: <input type="text" name="industry" value="{{ company.industry or '' }}"></p>
+                <p>URL: <input type="url" name="url" value="{{ company.url or '' }}"></p>
+                <p>応募日: <input type="date" name="application_date" value="{{ company.application_date or '' }}"></p>
+                <p>選考段階: <input type="text" name="selection_stage" value="{{ company.selection_stage or '' }}"></p>
+                <p>結果: <input type="text" name="result" value="{{ company.result or '' }}"></p>
+                <p>メモ:</p>
+                <textarea name="notes" rows="3">{{ company.notes or '' }}</textarea>
+                <p><input type="submit" value="基本情報を更新"></p>
+            </form>
+        </div>
+        
+        <div class="form-box">
+            <h3>面接を追加</h3>
+            <form action="{{ url_for('add_interview', company_id=company.id) }}" method="post">
+                <input type="datetime-local" name="date_time" required>
+                <input type="text" name="location" placeholder="場所 (例: オンライン)">
+                <input type="text" name="person" placeholder="担当者">
+                <input type="url" name="url" placeholder="面接URL">
+                <textarea name="notes" placeholder="メモ"></textarea>
+                <input type="submit" value="面接を追加">
+            </form>
         </div>
 
-    <style>
-        .detail-box, .form-box { background-color: #fff; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h3 { margin-top: 0; border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-bottom: 10px; }
-        .form-box input, .form-box textarea { width: 95%; padding: 8px; margin: 5px 0; border-radius: 4px; border: 1px solid #ccc; }
-
-        /* PC用のテーブルスタイル */
-        .responsive-table { width: 100%; border-collapse: collapse; }
-        .responsive-table th, .responsive-table td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-        .responsive-table thead th { background-color: #e9ecef; }
+        <div class="form-box">
+            <h3>タスクを追加</h3>
+            <form action="{{ url_for('add_task', company_id=company.id) }}" method="post">
+                <input type="text" name="content" placeholder="タスク内容" required>
+                <input type="date" name="deadline" placeholder="期限">
+                <input type="submit" value="タスクを追加">
+            </form>
+        </div>
         
-        /* --- スマホ用のメディアクエリ --- */
-        @media (max-width: 768px) {
-            .responsive-table thead {
-                /* PCでは表示されているヘッダーをスマホでは非表示に */
-                display: none;
-            }
-            .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td {
-                display: block;
-                width: 100%;
-            }
-            .responsive-table tr {
-                margin-bottom: 15px;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-            }
-            .responsive-table td {
-                text-align: right; /* 内容を右寄せに */
-                padding-left: 50%; /* 左側にラベルを表示するスペースを確保 */
-                position: relative;
-                border-bottom: 1px solid #eee;
-            }
-            .responsive-table td:before {
-                /* data-labelの内容（ヘッダーテキスト）を左側に表示 */
-                content: attr(data-label);
-                position: absolute;
-                left: 10px;
-                width: 45%;
-                padding-right: 10px;
-                text-align: left;
-                font-weight: bold;
-            }
+        <div class="form-box">
+            <h3>書類を追加</h3>
+            <form action="{{ url_for('add_document', company_id=company.id) }}" method="post">
+                <input type="text" name="document_name" placeholder="書類名" required>
+                <input type="date" name="submission_date">
+                <input type="text" name="status" placeholder="状況 (例: 提出済み)">
+                <input type="text" name="file_path" placeholder="ファイルパス/URL">
+                <input type="submit" value="書類を追加">
+            </form>
+        </div>
+
+        <div class="form-box">
+            <h3>メモを追加</h3>
+            <form action="{{ url_for('add_memo', company_id=company.id) }}" method="post">
+                <input type="text" name="title" placeholder="タイトル" required>
+                <textarea name="content" placeholder="内容"></textarea>
+                <input type="submit" value="メモを追加">
+            </form>
+        </div>
+
+        <div class="form-box">
+            <h3>企業情報の削除</h3>
+            <form action="{{ url_for('delete_company', company_id=company.id) }}" method="post" onsubmit="return confirm('本当にこの企業情報を削除しますか？関連する全ての情報が削除されます。');">
+                <input type="submit" value="この企業を削除する" class="btn-danger">
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .detail-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .detail-box h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .detail-box table { width: 100%; border-collapse: collapse; }
+        .detail-box th, .detail-box td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        .detail-box th { background-color: #e9ecef; width: 120px; }
+
+        .action-section { margin-top: 40px; }
+        .form-box {
+            background-color: #f0f0f0;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .form-box h3 { margin-top: 0; }
+        .form-box input[type="text"],
+        .form-box input[type="url"],
+        .form-box input[type="date"],
+        .form-box input[type="datetime-local"],
+        .form-box textarea {
+            width: 95%;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .btn-toggle, .form-box input[type="submit"] {
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
         }
     </style>
 {% endblock %}

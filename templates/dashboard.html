@@ -10,7 +10,7 @@
     
     <div class="section-box">
         <h3>スケジュールカレンダー</h3>
-        <div id="calendar-wrapper">
+        <div id='calendar-container'>
             <div id='calendar'></div>
         </div>
     </div>
@@ -20,19 +20,28 @@
     <div class="section-box">
         <h3>応募企業一覧</h3>
         {% if companies %}
-            <div class="responsive-list">
-                {% for company in companies %}
-                <a href="{{ url_for('company_detail', company_id=company.id) }}" class="list-item-link">
-                    <div class="list-item">
-                        <div class="item-header"><strong>{{ company.name }}</strong></div>
-                        <div class="item-body">
-                            <span><strong>業界:</strong> {{ company.industry or '未設定' }}</span>
-                            <span><strong>選考段階:</strong> {{ company.selection_stage or '未設定' }}</span>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>企業名</th>
+                        <th>業界</th>
+                        <th>選考段階</th>
+                        <th>結果</th>
+                        <th>詳細</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for company in companies %}
+                    <tr>
+                        <td>{{ company.name }}</td>
+                        <td>{{ company.industry or '未設定' }}</td>
+                        <td>{{ company.selection_stage or '未設定' }}</td>
+                        <td>{{ company.result or '選考中' }}</td>
+                        <td><a href="{{ url_for('company_detail', company_id=company.id) }}">詳細を見る</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% else %}
             <p>まだ応募企業が登録されていません。</p>
         {% endif %}
@@ -41,59 +50,80 @@
     <hr>
 
     <div class="section-box">
-        </div>
-    
-    <script>
-        // ★変更点: カレンダー初期化スクリプトを元に戻す
-        document.addEventListener('DOMContentLoaded', function() {
-          var calendarEl = document.getElementById('calendar');
-          if (calendarEl) {
-              var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'ja',
-                headerToolbar: {
-                  left: 'prev,next today',
-                  center: 'title',
-                  right: 'dayGridMonth,timeGridWeek,listWeek'
-                },
-                events: JSON.parse('{{ calendar_events|safe }}'),
-                eventClick: function(info) {
-                  if (info.event.url && info.event.url !== '#') {
-                      window.location.href = info.event.url;
-                      info.jsEvent.preventDefault(); 
-                  }
-                }
-              });
-              calendar.render();
-          }
-        });
-    </script>
+        <h3>企業を追加する</h3>
+        <form action="{{ url_for('dashboard') }}" method="post">
+            <p>企業名: <input type="text" name="name" required></p>
+            <p>業界: <input type="text" name="industry"></p>
+            <p>URL: <input type="url" name="url"></p>
+            <p>メモ: <textarea name="notes" rows="2"></textarea></p>
+            <button type="submit">追加</button>
+        </form>
+    </div>
     
     <style>
-        .section-box { padding: 20px; margin-bottom: 25px; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        h3 { margin-top: 0; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px; }
-
-        /* 企業一覧のスタイル */
-        .list-item-link { color: inherit; text-decoration: none; }
-        .list-item { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; padding: 15px; transition: background-color 0.2s; }
-        .list-item:hover { background-color: #f8f9fa; }
-        .item-header { font-size: 1.2em; margin-bottom: 10px; }
-        .item-body span { display: block; margin-bottom: 5px; color: #555; }
-
-        /* --- メディアクエリ --- */
-        @media (max-width: 768px) {
-            body { margin: 10px; }
-            .section-box { padding: 15px; }
-            h2 { font-size: 1.5em; }
-            
-            /* ★変更点: カレンダーのツールバーのスタイルを調整 */
-            .fc .fc-toolbar.fc-header-toolbar {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                font-size: 0.9em;
-            }
-            .fc-toolbar-chunk { margin-bottom: 5px; }
+        .section-box {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .section-box h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background-color: #f2f2f2; }
+        input[type="text"], input[type="url"], textarea {
+            width: 95%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
     </style>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        if (calendarEl) {
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+              initialView: 'dayGridMonth',
+              locale: 'ja',
+              headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listWeek'
+              },
+              events: JSON.parse('{{ calendar_events|safe }}'),
+              // ★変更点: eventDidMount コールバックを削除
+              eventClick: function(info) {
+                if (info.event.url && info.event.url !== '#') {
+                    window.location.href = info.event.url;
+                    info.jsEvent.preventDefault(); 
+                }
+              }
+            });
+            calendar.render();
+        }
+      });
+    </script>
 {% endblock %}
