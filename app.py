@@ -190,10 +190,18 @@ from datetime import datetime
 # ...（他のコードはそのまま）...
 
 # ★変更点: ダッシュボードのルートをまるごと置き換え
+# app.py の上部にあることを確認してください
+import json
+from datetime import datetime
+
+# ...（他のコードはそのまま）...
+
+# ★変更点: ダッシュボードのルートをまるごと置き換え
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required 
 def dashboard():
     if request.method == 'POST':
+        # ... 既存の企業追加ロジックは変更なし ...
         name = request.form.get('name')
         if name:
             new_company = Company(name=name, industry=request.form.get('industry'), url=request.form.get('url'), notes=request.form.get('notes'), user_id=current_user.id)
@@ -214,26 +222,21 @@ def dashboard():
                 'start': company.application_date,
                 'url': url_for('company_detail', company_id=company.id),
                 'backgroundColor': '#28a745', # Green
-                'borderColor': '#28a745'
+                'borderColor': '#28a745',
+                'textColor': 'black' # 文字色を黒に設定
             })
 
-    # 面接日
+    # 面接日 (★時間表示に戻す)
     interviews = Interview.query.filter_by(user_id=current_user.id).all()
     for interview in interviews:
         if interview.date_time:
-            # datetime-local (YYYY-MM-DDTHH:MM) から日付と時間を分割
-            parts = interview.date_time.split('T')
-            start_date = parts[0]
-            start_time = parts[1] if len(parts) > 1 else ''
-            
             calendar_events.append({
-                # タイトルに時間を含める
-                'title': f"面接({start_time}) {interview.company.name}",
-                # startには日付のみを指定し、終日イベントとして扱う
-                'start': start_date,
+                'title': f"面接: {interview.company.name}", # タイトルを元に戻す
+                'start': interview.date_time,             # 日時をそのまま渡す
                 'url': url_for('company_detail', company_id=interview.company_id),
                 'backgroundColor': '#dc3545', # Red
-                'borderColor': '#dc3545'
+                'borderColor': '#dc3545',
+                'textColor': 'black' # 文字色を黒に設定
             })
 
     # タスクの締切
@@ -246,7 +249,7 @@ def dashboard():
                 'url': url_for('company_detail', company_id=task.company_id) if task.company_id else '#',
                 'backgroundColor': '#ffc107', # Yellow
                 'borderColor': '#ffc107',
-                'textColor': '#212529' # Dark text for yellow background
+                'textColor': 'black' # 文字色を黒に設定
             })
             
     # 書類の提出日
@@ -258,14 +261,16 @@ def dashboard():
                 'start': doc.submission_date,
                 'url': url_for('company_detail', company_id=doc.company_id) if doc.company_id else '#',
                 'backgroundColor': '#17a2b8', # Teal
-                'borderColor': '#17a2b8'
+                'borderColor': '#17a2b8',
+                'textColor': 'black' # 文字色を黒に設定
             })
 
     return render_template(
         'dashboard.html', 
         companies=companies, 
-        calendar_events=json.dumps(calendar_events) # JSON形式でテンプレートに渡す
+        calendar_events=json.dumps(calendar_events)
     )
+
 
 
 @app.route('/company/<int:company_id>')
