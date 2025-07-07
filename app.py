@@ -407,6 +407,98 @@ def add_memo(company_id):
         flash('メモを追加しました', 'success')
     return redirect(url_for('company_detail', company_id=company.id))
 
+
+# --- 各アイテムの編集・削除ルート ---
+
+# 面接の編集・削除
+@app.route('/interview/<int:interview_id>/edit', methods=['POST'])
+@login_required
+def edit_interview(interview_id):
+    interview = Interview.query.filter_by(id=interview_id, user_id=current_user.id).first_or_404()
+    interview.date_time = request.form.get('date_time')
+    interview.location = request.form.get('location')
+    interview.person = request.form.get('person')
+    interview.url = request.form.get('url')
+    interview.notes = request.form.get('notes')
+    db.session.commit()
+    flash('面接情報が更新されました', 'success')
+    return redirect(url_for('company_detail', company_id=interview.company_id))
+
+@app.route('/interview/<int:interview_id>/delete', methods=['POST'])
+@login_required
+def delete_interview(interview_id):
+    interview = Interview.query.filter_by(id=interview_id, user_id=current_user.id).first_or_404()
+    company_id = interview.company_id
+    db.session.delete(interview)
+    db.session.commit()
+    flash('面接情報を削除しました', 'success')
+    return redirect(url_for('company_detail', company_id=company_id))
+
+# タスクの編集・削除
+@app.route('/task/<int:task_id>/edit', methods=['POST'])
+@login_required
+def edit_task(task_id):
+    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first_or_404()
+    task.content = request.form.get('content')
+    task.deadline = request.form.get('deadline')
+    db.session.commit()
+    flash('タスクが更新されました', 'success')
+    return redirect(url_for('company_detail', company_id=task.company_id))
+
+@app.route('/task/<int:task_id>/delete', methods=['POST'])
+@login_required
+def delete_task(task_id):
+    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first_or_404()
+    company_id = task.company_id
+    db.session.delete(task)
+    db.session.commit()
+    flash('タスクを削除しました', 'success')
+    return redirect(url_for('company_detail', company_id=company_id))
+
+# 書類の編集・削除
+@app.route('/document/<int:document_id>/edit', methods=['POST'])
+@login_required
+def edit_document(document_id):
+    document = Document.query.filter_by(id=document_id, user_id=current_user.id).first_or_404()
+    document.document_name = request.form.get('document_name')
+    document.submission_date = request.form.get('submission_date')
+    document.status = request.form.get('status')
+    document.file_path = request.form.get('file_path')
+    db.session.commit()
+    flash('書類情報が更新されました', 'success')
+    return redirect(url_for('company_detail', company_id=document.company_id))
+
+@app.route('/document/<int:document_id>/delete', methods=['POST'])
+@login_required
+def delete_document(document_id):
+    document = Document.query.filter_by(id=document_id, user_id=current_user.id).first_or_404()
+    company_id = document.company_id
+    db.session.delete(document)
+    db.session.commit()
+    flash('書類情報を削除しました', 'success')
+    return redirect(url_for('company_detail', company_id=company_id))
+
+# メモの編集・削除
+@app.route('/memo/<int:memo_id>/edit', methods=['POST'])
+@login_required
+def edit_memo(memo_id):
+    memo = Memo.query.filter_by(id=memo_id, user_id=current_user.id).first_or_404()
+    memo.title = request.form.get('title')
+    memo.content = request.form.get('content')
+    db.session.commit()
+    flash('メモが更新されました', 'success')
+    return redirect(url_for('company_detail', company_id=memo.company_id))
+
+@app.route('/memo/<int:memo_id>/delete', methods=['POST'])
+@login_required
+def delete_memo(memo_id):
+    memo = Memo.query.filter_by(id=memo_id, user_id=current_user.id).first_or_404()
+    company_id = memo.company_id
+    db.session.delete(memo)
+    db.session.commit()
+    flash('メモを削除しました', 'success')
+    return redirect(url_for('company_detail', company_id=company_id))
+
 # --- この下に、各アイテムの削除ルートを追加可能 (例: /interview/<id>/delete) ---
 
 

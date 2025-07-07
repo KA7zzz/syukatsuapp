@@ -6,131 +6,62 @@
     <h2>{{ company.name }} の詳細情報</h2>
     <p><a href="{{ url_for('dashboard') }}">ダッシュボードに戻る</a></p>
 
-    <div class="display-section">
-        <div class="detail-box">
-            <h3>基本情報</h3>
+    <div class="detail-box">
+        <h3>基本情報の編集</h3>
+        <form action="{{ url_for('edit_company', company_id=company.id) }}" method="post">
             <table border="1">
-                <tr><th>企業名</th><td>{{ company.name }}</td></tr>
-                <tr><th>業界</th><td>{{ company.industry or '未設定' }}</td></tr>
-                <tr><th>URL</th><td><a href="{{ company.url }}" target="_blank">{{ company.url }}</a></td></tr>
-                <tr><th>応募日</th><td>{{ company.application_date or '未設定' }}</td></tr>
-                <tr><th>選考段階</th><td>{{ company.selection_stage or '未設定' }}</td></tr>
-                <tr><th>結果</th><td>{{ company.result or '未設定' }}</td></tr>
-                <tr><th>メモ</th><td>{{ company.notes or '' }}</td></tr>
+                <tr><th>企業名</th><td><input type="text" name="name" value="{{ company.name }}" required></td></tr>
+                <tr><th>業界</th><td><input type="text" name="industry" value="{{ company.industry or '' }}"></td></tr>
+                <tr><th>URL</th><td><input type="url" name="url" value="{{ company.url or '' }}"></td></tr>
+                <tr><th>応募日</th><td><input type="date" name="application_date" value="{{ company.application_date or '' }}"></td></tr>
+                <tr><th>選考段階</th><td><input type="text" name="selection_stage" value="{{ company.selection_stage or '' }}"></td></tr>
+                <tr><th>結果</th><td><input type="text" name="result" value="{{ company.result or '' }}"></td></tr>
+                <tr><th>メモ</th><td><textarea name="notes" rows="3">{{ company.notes or '' }}</textarea></td></tr>
             </table>
-        </div>
-
-        <div class="detail-box">
-            <h3>面接スケジュール</h3>
-            {% if interviews %}
-                <table border="1">
-                    <thead><tr><th>日時</th><th>場所</th><th>担当者</th><th>URL</th><th>メモ</th></tr></thead>
-                    <tbody>
-                        {% for interview in interviews %}
-                        <tr>
-                            <td>{{ interview.date_time }}</td>
-                            <td>{{ interview.location }}</td>
-                            <td>{{ interview.person }}</td>
-                            <td><a href="{{ interview.url }}" target="_blank">{{ interview.url }}</a></td>
-                            <td>{{ interview.notes }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>面接情報はありません。</p>
-            {% endif %}
-        </div>
-
-        <div class="detail-box">
-            <h3>タスク</h3>
-            {% if tasks %}
-                <table border="1">
-                    <thead><tr><th>タスク内容</th><th>期限</th><th>状態</th><th>操作</th></tr></thead>
-                    <tbody>
-                        {% for task in tasks %}
-                        <tr>
-                            <td>{{ task.content }}</td>
-                            <td>{{ task.deadline }}</td>
-                            <td>{{ task.status }}</td>
-                            <td>
-                                <form action="{{ url_for('toggle_task', task_id=task.id) }}" method="post" style="display:inline;">
-                                    <button type="submit" class="btn-toggle">{{ '未完了に戻す' if task.status == '完了' else '完了にする' }}</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>タスクはありません。</p>
-            {% endif %}
-        </div>
-
-        <div class="detail-box">
-            <h3>応募書類</h3>
-            {% if documents %}
-                <table border="1">
-                    <thead><tr><th>書類名</th><th>提出日</th><th>状況</th><th>ファイルパス/URL</th></tr></thead>
-                    <tbody>
-                        {% for doc in documents %}
-                        <tr>
-                            <td>{{ doc.document_name }}</td>
-                            <td>{{ doc.submission_date }}</td>
-                            <td>{{ doc.status }}</td>
-                            <td><a href="{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>応募書類はありません。</p>
-            {% endif %}
-        </div>
-
-        <div class="detail-box">
-            <h3>メモ</h3>
-            {% if memos %}
-                <table border="1">
-                    <thead><tr><th>タイトル</th><th>内容</th></tr></thead>
-                    <tbody>
-                        {% for memo in memos %}
-                        <tr>
-                            <td>{{ memo.title }}</td>
-                            <td>{{ memo.content|safe }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>メモはありません。</p>
-            {% endif %}
-        </div>
+            <p><input type="submit" value="基本情報を更新"></p>
+        </form>
+        <form action="{{ url_for('delete_company', company_id=company.id) }}" method="post" onsubmit="return confirm('本当にこの企業情報を削除しますか？関連する全ての情報が削除されます。');" style="margin-top: 10px;">
+            <input type="submit" value="この企業を削除する" class="btn-danger">
+        </form>
     </div>
 
-
-    <hr>
-
-    <div class="action-section">
-        <h2>情報編集・追加</h2>
-
-        <div class="form-box">
-            <h3>基本情報の編集</h3>
-            <form action="{{ url_for('edit_company', company_id=company.id) }}" method="post">
-                <p>企業名: <input type="text" name="name" value="{{ company.name }}" required></p>
-                <p>業界: <input type="text" name="industry" value="{{ company.industry or '' }}"></p>
-                <p>URL: <input type="url" name="url" value="{{ company.url or '' }}"></p>
-                <p>応募日: <input type="date" name="application_date" value="{{ company.application_date or '' }}"></p>
-                <p>選考段階: <input type="text" name="selection_stage" value="{{ company.selection_stage or '' }}"></p>
-                <p>結果: <input type="text" name="result" value="{{ company.result or '' }}"></p>
-                <p>メモ:</p>
-                <textarea name="notes" rows="3">{{ company.notes or '' }}</textarea>
-                <p><input type="submit" value="基本情報を更新"></p>
-            </form>
-        </div>
-        
-        <div class="form-box">
-            <h3>面接を追加</h3>
+    <div class="detail-box">
+        <h3>面接スケジュール</h3>
+        <table border="1">
+            <thead><tr><th>日時</th><th>場所</th><th>担当者</th><th>URL/メモ</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for interview in interviews %}
+                <tr class="view-row-interview-{{ interview.id }}">
+                    <td>{{ interview.date_time }}</td>
+                    <td>{{ interview.location }}</td>
+                    <td>{{ interview.person }}</td>
+                    <td><a href="{{ interview.url }}" target="_blank">{{ interview.url }}</a><br>{{ interview.notes }}</td>
+                    <td class="action-buttons">
+                        <button onclick="toggleEdit('interview-{{ interview.id }}')">編集</button>
+                        <form action="{{ url_for('delete_interview', interview_id=interview.id) }}" method="post" onsubmit="return confirm('この面接情報を削除しますか？');">
+                            <button type="submit">削除</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr class="edit-row edit-row-interview-{{ interview.id }}">
+                    <td colspan="5">
+                        <form action="{{ url_for('edit_interview', interview_id=interview.id) }}" method="post">
+                            <p>日時: <input type="datetime-local" name="date_time" value="{{ interview.date_time.replace(' ', 'T') if interview.date_time else '' }}"></p>
+                            <p>場所: <input type="text" name="location" value="{{ interview.location or '' }}"></p>
+                            <p>担当者: <input type="text" name="person" value="{{ interview.person or '' }}"></p>
+                            <p>URL: <input type="url" name="url" value="{{ interview.url or '' }}"></p>
+                            <p>メモ: <textarea name="notes">{{ interview.notes or '' }}</textarea></p>
+                            <button type="submit">更新</button>
+                            <button type="button" onclick="toggleEdit('interview-{{ interview.id }}')">キャンセル</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not interviews %}<p>面接情報はありません。</p>{% endif %}
+        <div class="add-form">
+            <h4>面接を追加</h4>
             <form action="{{ url_for('add_interview', company_id=company.id) }}" method="post">
                 <input type="datetime-local" name="date_time" required>
                 <input type="text" name="location" placeholder="場所 (例: オンライン)">
@@ -140,18 +71,82 @@
                 <input type="submit" value="面接を追加">
             </form>
         </div>
+    </div>
 
-        <div class="form-box">
-            <h3>タスクを追加</h3>
+    <div class="detail-box">
+        <h3>タスク</h3>
+        <table border="1">
+            <thead><tr><th>タスク内容</th><th>期限</th><th>状態</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr class="view-row-task-{{ task.id }}">
+                    <td>{{ task.content }}</td>
+                    <td>{{ task.deadline }}</td>
+                    <td>{{ task.status }}</td>
+                    <td class="action-buttons">
+                        <button onclick="toggleEdit('task-{{ task.id }}')">編集</button>
+                        <form action="{{ url_for('toggle_task', task_id=task.id) }}" method="post"><button type="submit">{{ '未完了' if task.status == '完了' else '完了' }}</button></form>
+                        <form action="{{ url_for('delete_task', task_id=task.id) }}" method="post" onsubmit="return confirm('このタスクを削除しますか？');"><button type="submit">削除</button></form>
+                    </td>
+                </tr>
+                <tr class="edit-row edit-row-task-{{ task.id }}">
+                    <td colspan="4">
+                        <form action="{{ url_for('edit_task', task_id=task.id) }}" method="post">
+                            <p>内容: <input type="text" name="content" value="{{ task.content }}" required></p>
+                            <p>期限: <input type="date" name="deadline" value="{{ task.deadline or '' }}"></p>
+                            <button type="submit">更新</button>
+                            <button type="button" onclick="toggleEdit('task-{{ task.id }}')">キャンセル</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not tasks %}<p>タスクはありません。</p>{% endif %}
+        <div class="add-form">
+            <h4>タスクを追加</h4>
             <form action="{{ url_for('add_task', company_id=company.id) }}" method="post">
                 <input type="text" name="content" placeholder="タスク内容" required>
-                <input type="date" name="deadline" placeholder="期限">
+                <input type="date" name="deadline">
                 <input type="submit" value="タスクを追加">
             </form>
         </div>
-        
-        <div class="form-box">
-            <h3>書類を追加</h3>
+    </div>
+
+    <div class="detail-box">
+        <h3>応募書類</h3>
+        <table border="1">
+            <thead><tr><th>書類名</th><th>提出日</th><th>状況</th><th>ファイル/URL</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr class="view-row-document-{{ doc.id }}">
+                    <td>{{ doc.document_name }}</td>
+                    <td>{{ doc.submission_date }}</td>
+                    <td>{{ doc.status }}</td>
+                    <td><a href="{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a></td>
+                    <td class="action-buttons">
+                        <button onclick="toggleEdit('document-{{ doc.id }}')">編集</button>
+                        <form action="{{ url_for('delete_document', document_id=doc.id) }}" method="post" onsubmit="return confirm('この書類情報を削除しますか？');"><button type="submit">削除</button></form>
+                    </td>
+                </tr>
+                <tr class="edit-row edit-row-document-{{ doc.id }}">
+                    <td colspan="5">
+                        <form action="{{ url_for('edit_document', document_id=doc.id) }}" method="post">
+                            <p>書類名: <input type="text" name="document_name" value="{{ doc.document_name }}" required></p>
+                            <p>提出日: <input type="date" name="submission_date" value="{{ doc.submission_date or '' }}"></p>
+                            <p>状況: <input type="text" name="status" value="{{ doc.status or '' }}"></p>
+                            <p>ファイル/URL: <input type="text" name="file_path" value="{{ doc.file_path or '' }}"></p>
+                            <button type="submit">更新</button>
+                            <button type="button" onclick="toggleEdit('document-{{ doc.id }}')">キャンセル</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not documents %}<p>応募書類はありません。</p>{% endif %}
+        <div class="add-form">
+            <h4>書類を追加</h4>
             <form action="{{ url_for('add_document', company_id=company.id) }}" method="post">
                 <input type="text" name="document_name" placeholder="書類名" required>
                 <input type="date" name="submission_date">
@@ -160,71 +155,83 @@
                 <input type="submit" value="書類を追加">
             </form>
         </div>
+    </div>
 
-        <div class="form-box">
-            <h3>メモを追加</h3>
+    <div class="detail-box">
+        <h3>メモ</h3>
+        <table border="1">
+            <thead><tr><th>タイトル</th><th>内容</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for memo in memos %}
+                <tr class="view-row-memo-{{ memo.id }}">
+                    <td>{{ memo.title }}</td>
+                    <td>{{ memo.content|safe }}</td>
+                    <td class="action-buttons">
+                        <button onclick="toggleEdit('memo-{{ memo.id }}')">編集</button>
+                        <form action="{{ url_for('delete_memo', memo_id=memo.id) }}" method="post" onsubmit="return confirm('このメモを削除しますか？');"><button type="submit">削除</button></form>
+                    </td>
+                </tr>
+                <tr class="edit-row edit-row-memo-{{ memo.id }}">
+                    <td colspan="3">
+                        <form action="{{ url_for('edit_memo', memo_id=memo.id) }}" method="post">
+                            <p>タイトル: <input type="text" name="title" value="{{ memo.title }}" required></p>
+                            <p>内容: <textarea name="content">{{ memo.content or '' }}</textarea></p>
+                            <button type="submit">更新</button>
+                            <button type="button" onclick="toggleEdit('memo-{{ memo.id }}')">キャンセル</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not memos %}<p>メモはありません。</p>{% endif %}
+        <div class="add-form">
+            <h4>メモを追加</h4>
             <form action="{{ url_for('add_memo', company_id=company.id) }}" method="post">
                 <input type="text" name="title" placeholder="タイトル" required>
                 <textarea name="content" placeholder="内容"></textarea>
                 <input type="submit" value="メモを追加">
             </form>
         </div>
-
-        <div class="form-box">
-            <h3>企業情報の削除</h3>
-            <form action="{{ url_for('delete_company', company_id=company.id) }}" method="post" onsubmit="return confirm('本当にこの企業情報を削除しますか？関連する全ての情報が削除されます。');">
-                <input type="submit" value="この企業を削除する" class="btn-danger">
-            </form>
-        </div>
     </div>
 
     <style>
-        .detail-box {
-            background-color: #f9f9f9;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .detail-box h3 {
-            margin-top: 0;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-        }
+        .detail-box { background-color: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .detail-box h3 { margin-top: 0; border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-bottom: 10px; }
         .detail-box table { width: 100%; border-collapse: collapse; }
-        .detail-box th, .detail-box td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-        .detail-box th { background-color: #e9ecef; width: 120px; }
+        .detail-box th, .detail-box td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }
+        .detail-box th { background-color: #e9ecef; }
+        .action-buttons form { display: inline-block; }
+        .action-buttons button, input[type="submit"] { padding: 4px 8px; cursor: pointer; }
+        
+        .edit-row { display: none; } /* 編集行は初期状態で非表示 */
+        .edit-row form p { margin: 5px 0; }
+        .edit-row input[type="text"], .edit-row input[type="url"], .edit-row input[type="date"], .edit-row input[type="datetime-local"], .edit-row textarea {
+            width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;
+        }
+        
+        .add-form { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .add-form h4 { margin-top: 0; }
+        .add-form input, .add-form textarea { width: 95%; margin-bottom: 10px; }
 
-        .action-section { margin-top: 40px; }
-        .form-box {
-            background-color: #f0f0f0;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-        .form-box h3 { margin-top: 0; }
-        .form-box input[type="text"],
-        .form-box input[type="url"],
-        .form-box input[type="date"],
-        .form-box input[type="datetime-local"],
-        .form-box textarea {
-            width: 95%;
-            padding: 8px;
-            margin: 5px 0;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        .btn-toggle, .form-box input[type="submit"] {
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            border: 1px solid #ccc;
-        }
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-            border-color: #dc3545;
-        }
+        .btn-danger { background-color: #dc3545; color: white; border-color: #dc3545; }
     </style>
+
+    <script>
+    function toggleEdit(prefix) {
+        // 表示用の行を取得
+        const viewRow = document.querySelector('.view-row-' + prefix);
+        // 編集用の行を取得
+        const editRow = document.querySelector('.edit-row-' + prefix);
+
+        // 表示/非表示を切り替える
+        if (viewRow.style.display === 'none') {
+            viewRow.style.display = '';
+            editRow.style.display = 'none';
+        } else {
+            viewRow.style.display = 'none';
+            editRow.style.display = '';
+        }
+    }
+    </script>
 {% endblock %}
