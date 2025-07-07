@@ -24,15 +24,21 @@
             <h3>面接スケジュール</h3>
             {% if interviews %}
                 <table border="1">
-                    <thead><tr><th>日時</th><th>場所</th><th>担当者</th><th>URL</th><th>メモ</th></tr></thead>
+                    <thead><tr><th>日時</th><th>場所</th><th>担当者</th><th>URL</th><th>メモ</th><th>操作</th></tr></thead>
                     <tbody>
                         {% for interview in interviews %}
                         <tr>
                             <td>{{ interview.date_time }}</td>
                             <td>{{ interview.location }}</td>
-                            <td>{{ interview.person }}</td>
+                            <td><{{ interview.person }}</td>
                             <td><a href="{{ interview.url }}" target="_blank">{{ interview.url }}</a></td>
                             <td>{{ interview.notes }}</td>
+                            <td>
+                                <a href="{{ url_for('edit_interview', interview_id=interview.id) }}" class="btn-edit">編集</a>
+                                <form action="{{ url_for('delete_interview', interview_id=interview.id) }}" method="post" style="display:inline;" onsubmit="return confirm('この面接情報を削除しますか？');">
+                                    <button type="submit" class="btn-delete">削除</button>
+                                </form>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -57,6 +63,10 @@
                                 <form action="{{ url_for('toggle_task', task_id=task.id) }}" method="post" style="display:inline;">
                                     <button type="submit" class="btn-toggle">{{ '未完了に戻す' if task.status == '完了' else '完了にする' }}</button>
                                 </form>
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn-edit">編集</a>
+                                <form action="{{ url_for('delete_task', task_id=task.id) }}" method="post" style="display:inline;" onsubmit="return confirm('このタスクを削除しますか？');">
+                                    <button type="submit" class="btn-delete">削除</button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -71,7 +81,7 @@
             <h3>応募書類</h3>
             {% if documents %}
                 <table border="1">
-                    <thead><tr><th>書類名</th><th>提出日</th><th>状況</th><th>ファイルパス/URL</th></tr></thead>
+                    <thead><tr><th>書類名</th><th>提出日</th><th>状況</th><th>ファイルパス/URL</th><th>操作</th></tr></thead>
                     <tbody>
                         {% for doc in documents %}
                         <tr>
@@ -79,6 +89,12 @@
                             <td>{{ doc.submission_date }}</td>
                             <td>{{ doc.status }}</td>
                             <td><a href="{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a></td>
+                            <td>
+                                <a href="{{ url_for('edit_document', document_id=doc.id) }}" class="btn-edit">編集</a>
+                                <form action="{{ url_for('delete_document', document_id=doc.id) }}" method="post" style="display:inline;" onsubmit="return confirm('この書類情報を削除しますか？');">
+                                    <button type="submit" class="btn-delete">削除</button>
+                                </form>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -92,12 +108,18 @@
             <h3>メモ</h3>
             {% if memos %}
                 <table border="1">
-                    <thead><tr><th>タイトル</th><th>内容</th></tr></thead>
+                    <thead><tr><th>タイトル</th><th>内容</th><th>操作</th></tr></thead>
                     <tbody>
                         {% for memo in memos %}
                         <tr>
                             <td>{{ memo.title }}</td>
                             <td>{{ memo.content|safe }}</td>
+                            <td>
+                                <a href="{{ url_for('edit_memo', memo_id=memo.id) }}" class="btn-edit">編集</a>
+                                <form action="{{ url_for('delete_memo', memo_id=memo.id) }}" method="post" style="display:inline;" onsubmit="return confirm('このメモを削除しますか？');">
+                                    <button type="submit" class="btn-delete">削除</button>
+                                </form>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -215,13 +237,33 @@
             border-radius: 4px;
             border: 1px solid #ccc;
         }
-        .btn-toggle, .form-box input[type="submit"] {
+        .btn-toggle,
+        .btn-edit,
+        .btn-delete,
+        .form-box input[type="submit"] {
             padding: 5px 10px;
             border-radius: 4px;
             cursor: pointer;
-            border: 1px solid #ccc;
+            border: none; /* Add this to remove default button border */
+            color: white; /* Text color for buttons */
+            text-decoration: none; /* Remove underline for links acting as buttons */
+            display: inline-block; /* Allows padding and margin for links */
+            text-align: center;
         }
-        .btn-danger {
+        .btn-toggle {
+            background-color: #007bff; /* Blue for toggle */
+        }
+        .btn-edit {
+            background-color: #ffc107; /* Yellow for edit */
+            color: black; /* Black text for yellow background */
+        }
+        .btn-delete {
+            background-color: #dc3545; /* Red for delete */
+        }
+        .form-box input[type="submit"] {
+            background-color: #28a745; /* Green for submit forms */
+        }
+        .form-box .btn-danger { /* Specific style for the delete company button */
             background-color: #dc3545;
             color: white;
             border-color: #dc3545;

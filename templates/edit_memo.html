@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}メモの編集 - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>メモの編集</h2>
+    {% if company %}
+    <p>関連企業: {{ company.name }}</p>
+    {% else %}
+    <p>関連企業: なし</p>
+    {% endif %}
+
+    <form action="{{ url_for('edit_memo', memo_id=memo.id) }}" method="post">
+        <label for="title">タイトル:</label>
+        <input type="text" id="title" name="title" value="{{ memo.title }}" required><br><br>
+
+        <label for="content">内容:</label><br>
+        <textarea id="content" name="content" rows="5" cols="50">{{ memo.content }}</textarea><br><br>
+
+        <input type="submit" value="メモを更新">
+    </form>
+
+    <p><a href="{{ url_for('company_detail', company_id=memo.company_id) if memo.company_id else url_for('dashboard') }}">戻る</a></p>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}書類情報の編集 - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>書類情報の編集</h2>
+    {% if company %}
+    <p>企業: {{ company.name }}</p>
+    {% else %}
+    <p>関連企業: なし</p>
+    {% endif %}
+
+    <form action="{{ url_for('edit_document', document_id=document.id) }}" method="post">
+        <label for="document_name">書類名:</label>
+        <input type="text" id="document_name" name="document_name" value="{{ document.document_name }}" required><br><br>
+
+        <label for="submission_date">提出日:</label>
+        <input type="date" id="submission_date" name="submission_date" value="{{ document.submission_date or '' }}"><br><br>
+
+        <label for="status">状況:</label>
+        <input type="text" id="status" name="status" value="{{ document.status or '' }}"><br><br>
+
+        <label for="file_path">ファイルパス/URL:</label>
+        <input type="text" id="file_path" name="file_path" value="{{ document.file_path or '' }}"><br><br>
+
+        <input type="submit" value="書類情報を更新">
+    </form>
+
+    <p><a href="{{ url_for('company_detail', company_id=document.company_id) if document.company_id else url_for('dashboard') }}">企業詳細に戻る</a></p>
+{% endblock %}

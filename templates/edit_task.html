@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}タスクの編集 - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>タスクの編集</h2>
+    {% if company %}
+    <p>関連企業: {{ company.name }}</p>
+    {% else %}
+    <p>関連企業: なし</p>
+    {% endif %}
+
+    <form action="{{ url_for('edit_task', task_id=task.id) }}" method="post">
+        <label for="content">タスク内容:</label>
+        <input type="text" id="content" name="content" value="{{ task.content }}" required><br><br>
+
+        <label for="deadline">期限 (例: 2025-06-20):</label>
+        <input type="date" id="deadline" name="deadline" value="{{ task.deadline or '' }}"><br><br>
+
+        <label for="status">状態:</label>
+        <select id="status" name="status">
+            <option value="未完了" {% if task.status == '未完了' %}selected{% endif %}>未完了</option>
+            <option value="完了" {% if task.status == '完了' %}selected{% endif %}>完了</option>
+        </select><br><br>
+
+        <input type="submit" value="タスクを更新">
+    </form>
+
+    <p><a href="{{ url_for('company_detail', company_id=task.company_id) if task.company_id else url_for('dashboard') }}">戻る</a></p>
+{% endblock %}

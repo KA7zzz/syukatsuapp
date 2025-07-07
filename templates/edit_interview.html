@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}面接情報の編集 - 就活管理アプリ{% endblock %}
+
+{% block content %}
+    <h2>面接情報の編集</h2>
+    <p>企業: {{ company.name }}</p>
+
+    <form action="{{ url_for('edit_interview', interview_id=interview.id) }}" method="post">
+        <label for="date_time">日時 (例: 2025-06-15T14:00):</label>
+        <input type="datetime-local" id="date_time" name="date_time" value="{{ interview.date_time }}" required><br><br>
+
+        <label for="location">場所:</label>
+        <input type="text" id="location" name="location" value="{{ interview.location or '' }}"><br><br>
+
+        <label for="person">担当者:</label>
+        <input type="text" id="person" name="person" value="{{ interview.person or '' }}"><br><br>
+
+        <label for="url">URL:</label>
+        <input type="url" id="url" name="url" value="{{ interview.url or '' }}"><br><br>
+
+        <label for="notes">メモ:</label><br>
+        <textarea id="notes" name="notes" rows="5" cols="50">{{ interview.notes or '' }}</textarea><br><br>
+
+        <input type="submit" value="面接情報を更新">
+    </form>
+
+    <p><a href="{{ url_for('company_detail', company_id=company.id) }}">企業詳細に戻る</a></p>
+{% endblock %}
